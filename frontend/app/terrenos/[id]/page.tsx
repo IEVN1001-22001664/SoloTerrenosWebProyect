@@ -52,7 +52,7 @@ export default async function TerrenoDetalle({
       {/* GALERIA */}
       <section className="grid md:grid-cols-4 gap-4 mb-10">
 
-        <div className="md:col-span-2 md:row-span-2 relative h-[420px] rounded-xl overflow-hidden">
+        <div className="md:col-span-2 md:row-span-2 relative h-105 rounded-xl overflow-hidden">
           <Image
             src={`https://picsum.photos/800/600?random=${terreno.id}`}
             alt={terreno.titulo}
@@ -62,7 +62,7 @@ export default async function TerrenoDetalle({
         </div>
 
         {[1,2,3,4].map((i) => (
-          <div key={i} className="relative h-[200px] rounded-xl overflow-hidden">
+          <div key={i} className="relative h-50 rounded-xl overflow-hidden">
             <Image
               src={`https://picsum.photos/600/400?random=${terreno.id+i}`}
               alt="Imagen terreno"
