@@ -28,10 +28,17 @@ export default function MapComponent({ onPolygonChange }: any) {
     const layer = e.layer;
 
     if (layer instanceof L.Polygon) {
-      const latlngs = layer.getLatLngs()[0].map((latlng: any) => [
-        latlng.lat,
-        latlng.lng,
-      ]);
+        // Obtenemos los puntos y le decimos a TS que lo trate como un arreglo de LatLng
+        const rawLatLngs = layer.getLatLngs() as any[]; 
+        
+        // Leaflet a veces devuelve arreglos anidados para polígonos, 
+        // nos aseguramos de tomar el primer nivel que contiene los puntos.
+        const firstLevel = Array.isArray(rawLatLngs[0]) ? rawLatLngs[0] : rawLatLngs;
+
+        const latlngs = firstLevel.map((latlng: any) => [
+          latlng.lat,
+          latlng.lng,
+        ]);
 
       setCoordinates(latlngs);
       onPolygonChange(latlngs);
