@@ -25,7 +25,7 @@ export default function ProtectedRoute({
     }
 
     if (allowedRoles && !allowedRoles.includes(user.rol)) {
-      router.push("/no-autorizado");
+      router.push("/");
       return;
     }
   }, [user, loading, router, allowedRoles]);
