@@ -35,8 +35,8 @@ export default function TerrenoMap({ coordinates }: Props) {
       className="w-full h-96 rounded-xl z-0"
     >
       <TileLayer
-        attribution="© OpenStreetMap"
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution="Tiles © Esri"
+        url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
       />
 
       {/* Polygon también requiere LatLngTuple[] o LatLngExpression[] */}

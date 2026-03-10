@@ -18,25 +18,14 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  // ⚡ BYPASS PARA REVISIÓN: Usuario logueado por defecto para evitar 404/Login
-  const [user, setUser] = useState<User | null>({
-    id: 1,
-    rol: "admin", // Cambia esto según el rol que quieras mostrar
-    nombre: "Usuario Demo",
-  });
-  
-  // ⚡ Cargando en false para que entre directo a la app
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // URL base para el futuro (Vercel usará la variable de entorno, local usará el puerto 5000)
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-
+  // 🔥 Verificar sesión al cargar app
   useEffect(() => {
     const checkAuth = async () => {
-      // Comentamos la ejecución del fetch para que no falle en Vercel buscando localhost
-      /*
       try {
-        const res = await fetch(`${API_URL}/api/auth/me`, {
+        const res = await fetch("http://localhost:5000/api/auth/me", {
           credentials: "include",
         });
 
@@ -51,25 +40,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } finally {
         setLoading(false);
       }
-      */
     };
 
-    // checkAuth(); // Desactivado temporalmente para el despliegue de avance
-  }, [API_URL]);
+    checkAuth();
+  }, []);
 
   const login = (userData: User) => {
     setUser(userData);
   };
 
   const logout = async () => {
-    // Solo logout local por ahora para el avance
-    setUser(null);
-    
-    /* await fetch(`${API_URL}/api/auth/logout`, {
+    await fetch("http://localhost:5000/api/auth/logout", {
       method: "POST",
       credentials: "include",
     });
-    */
+
+    setUser(null);
   };
 
   return (
@@ -81,8 +67,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
+
   if (!context) {
     throw new Error("useAuth debe usarse dentro de AuthProvider");
   }
+
   return context;
 };

@@ -8,7 +8,6 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 
-/* 🔥 Fuerza a Leaflet a recalcular tamaño */
 function ResizeMap() {
   const map = useMap();
 
@@ -21,6 +20,54 @@ function ResizeMap() {
   return null;
 }
 
+/* -------- CALCULAR CENTRO -------- */
+
+function getCenter(coords: number[][]) {
+  let lat = 0;
+  let lng = 0;
+
+  coords.forEach(([y, x]) => {
+    lat += y;
+    lng += x;
+  });
+
+  return [lat / coords.length, lng / coords.length];
+}
+
+/* -------- CALCULAR PERIMETRO -------- */
+
+function getPerimeter(coords: number[][]) {
+  let perimeter = 0;
+
+  for (let i = 0; i < coords.length; i++) {
+    const [lat1, lng1] = coords[i];
+    const [lat2, lng2] = coords[(i + 1) % coords.length];
+
+    const distance = L.latLng(lat1, lng1).distanceTo(
+      L.latLng(lat2, lng2)
+    );
+
+    perimeter += distance;
+  }
+
+  return perimeter;
+}
+
+/* -------- CALCULAR AREA -------- */
+
+function getArea(coords: number[][]) {
+  let area = 0;
+
+  for (let i = 0; i < coords.length; i++) {
+    const [x1, y1] = coords[i];
+    const [x2, y2] = coords[(i + 1) % coords.length];
+
+    area += x1 * y2 - x2 * y1;
+  }
+
+  return Math.abs(area / 2) * 111139 * 111139;
+}
+
 export default function MapComponent({ onPolygonChange }: any) {
   const [coordinates, setCoordinates] = useState<number[][] | null>(null);
 
@@ -28,20 +75,33 @@ export default function MapComponent({ onPolygonChange }: any) {
     const layer = e.layer;
 
     if (layer instanceof L.Polygon) {
-        // Obtenemos los puntos y le decimos a TS que lo trate como un arreglo de LatLng
-        const rawLatLngs = layer.getLatLngs() as any[]; 
-        
-        // Leaflet a veces devuelve arreglos anidados para polígonos, 
-        // nos aseguramos de tomar el primer nivel que contiene los puntos.
-        const firstLevel = Array.isArray(rawLatLngs[0]) ? rawLatLngs[0] : rawLatLngs;
+      const rawLatLngs = layer.getLatLngs() as any[];
 
-        const latlngs = firstLevel.map((latlng: any) => [
-          latlng.lat,
-          latlng.lng,
-        ]);
+      const firstLevel = Array.isArray(rawLatLngs[0])
+        ? rawLatLngs[0]
+        : rawLatLngs;
+
+      const latlngs = firstLevel.map((latlng: any) => [
+        latlng.lat,
+        latlng.lng,
+      ]);
+
+      /* CALCULOS */
+
+      const center = getCenter(latlngs);
+      const perimeter = getPerimeter(latlngs);
+      const area = getArea(latlngs);
+
+      const data = {
+        polygon: latlngs,
+        center,
+        perimeter,
+        area,
+      };
 
       setCoordinates(latlngs);
-      onPolygonChange(latlngs);
+
+      onPolygonChange(data);
     }
   };
 
@@ -55,8 +115,8 @@ export default function MapComponent({ onPolygonChange }: any) {
         <ResizeMap />
 
         <TileLayer
-          attribution="© OpenStreetMap"
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution="Tiles © Esri"
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
         />
 
         <FeatureGroup>
