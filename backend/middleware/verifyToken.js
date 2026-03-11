@@ -1,19 +1,46 @@
+// ======================================================
+// IMPORTAR JWT
+// ======================================================
+
 const jwt = require("jsonwebtoken");
 
+
+// ======================================================
+// MIDDLEWARE SIMPLE DE VERIFICACIÓN DE TOKEN
+// ======================================================
+
 const verifyToken = (req, res, next) => {
-  const token = req.cookies.token;
+
+  const token = req.cookies?.token;
+
+  console.log("verifyToken ejecutado");
 
   if (!token) {
-    return res.status(401).json({ message: "No autenticado" });
+
+    return res.status(401).json({
+      message: "No autenticado"
+    });
+
   }
 
   try {
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
     req.user = decoded;
+
     next();
+
   } catch (error) {
-    return res.status(401).json({ message: "Token inválido" });
+
+    console.error("Token inválido:", error.message);
+
+    return res.status(401).json({
+      message: "Token inválido"
+    });
+
   }
+
 };
 
 module.exports = verifyToken;

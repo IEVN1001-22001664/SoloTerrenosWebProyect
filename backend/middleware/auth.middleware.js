@@ -1,30 +1,71 @@
-const jwt = require('jsonwebtoken');
+// ======================================================
+// IMPORTACIÓN DE LIBRERÍA JWT
+// ======================================================
 
-//----------------------------
-// Codigo cambiado - Middleware actualizado para usar cookies
-//----------------------------
+const jwt = require("jsonwebtoken");
+
+
+// ======================================================
+// MIDDLEWARE DE AUTENTICACIÓN
+// Verifica el token almacenado en cookies httpOnly
+// ======================================================
+
 const authMiddleware = (req, res, next) => {
 
-  // 🔥 Ahora leemos el token desde cookies
-  const token = req.cookies.token;
+  // ======================================================
+  // 1️⃣ OBTENER TOKEN DESDE COOKIES
+  // ======================================================
 
-  // 1️⃣ Verificar que exista token en cookie
+  const token = req.cookies?.token;
+
+  // Debug útil
+  //console.log("AuthMiddleware ejecutado");
+  //console.log("Token recibido:", token ? "SI" : "NO");
+
+  // ======================================================
+  // 2️⃣ VERIFICAR EXISTENCIA DE TOKEN
+  // ======================================================
+
   if (!token) {
-    return res.status(401).json({ message: 'Token requerido' });
+    return res.status(401).json({
+      message: "Token requerido"
+    });
   }
 
   try {
-    // 2️⃣ Verificar token
+
+    // ======================================================
+    // 3️⃣ VERIFICAR TOKEN JWT
+    // ======================================================
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // 3️⃣ Adjuntar usuario decodificado
+    // ======================================================
+    // 4️⃣ ADJUNTAR USUARIO AL REQUEST
+    // Esto permite acceder a req.user en rutas protegidas
+    // ======================================================
+
     req.user = decoded;
 
+    console.log("Usuario autenticado:", decoded.id);
+
     next();
+
   } catch (error) {
-    return res.status(401).json({ message: 'Token inválido o expirado' });
+
+    console.error("Error verificando token:", error.message);
+
+    return res.status(401).json({
+      message: "Token inválido o expirado"
+    });
+
   }
+
 };
-//----------------------------
+
+
+// ======================================================
+// EXPORTAR MIDDLEWARE
+// ======================================================
 
 module.exports = authMiddleware;

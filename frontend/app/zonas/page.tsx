@@ -1,22 +1,48 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
+
+const MapContainer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.MapContainer),
+  { ssr: false }
+);
+
+const TileLayer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.TileLayer),
+  { ssr: false }
+);
+
+const Marker = dynamic(
+  () => import("react-leaflet").then((mod) => mod.Marker),
+  { ssr: false }
+);
+
+const Popup = dynamic(
+  () => import("react-leaflet").then((mod) => mod.Popup),
+  { ssr: false }
+);
 
 export default function ZonasPage() {
   const [terrenos, setTerrenos] = useState<any[]>([]);
 
   useEffect(() => {
+    console.log("ZonasPage cargada")
+    console.log("Intentando cargar terrenos ...");
     async function load() {
-      const res = await fetch("http://localhost:5000/api/terrenos");
+      console.log("Enviando request al backend");
+      const res = await fetch("http://localhost:5000/api/terrenos/publicos");
+      console.log("Respuesta HTTP", res.status);
       const data = await res.json();
+      console.log("Datos recibidos", data);
+      console.log("Primer terreno:", data[0]);
       setTerrenos(data);
     }
 
     load();
-    console.log("ZonasPage cargada")
   }, []);
 
   return (
@@ -72,15 +98,14 @@ export default function ZonasPage() {
           className="h-full w-full"
         >
 
-          <TileLayer
-            attribution="Tiles © Esri"
-            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-          />
+          <TileLayer attribution="© OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-          {terrenos.map((t) => (
+          {terrenos
+          .filter((t) => t.center_lat && t.center_lng)
+          .map((t) => (
             <Marker
               key={t.id}
-              position={[t.centro_lat, t.centro_lng]}
+              position={[Number(t.centro_lat), Number(t.centro_lng)]}
             >
               <Popup>
 
@@ -99,7 +124,7 @@ export default function ZonasPage() {
                   </p>
 
                   <p className="text-xs text-gray-600">
-                    {Math.round(t.area_m2)} m²
+                    {Math.round(t.area)} m²
                   </p>
 
                 </div>
