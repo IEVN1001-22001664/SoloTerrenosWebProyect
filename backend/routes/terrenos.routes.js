@@ -54,7 +54,7 @@ router.post(
 router.put(
   "/:id",
   authMiddleware,
-  roleMiddleware("cliente", "admin"),
+  roleMiddleware("colaborador", "admin"),
   terrenosController.updateTerreno
 );
 
@@ -66,7 +66,7 @@ router.put(
 router.delete(
   "/:id",
   authMiddleware,
-  roleMiddleware("cliente", "admin"),
+  roleMiddleware("colaborador", "admin"),
   terrenosController.deleteTerreno
 );
 

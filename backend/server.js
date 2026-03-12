@@ -112,10 +112,32 @@ app.get("/", async (req, res) => {
     });
 
   }
+// ======================================================
+// CONFIGURACION DE IMAGENES
+// ======================================================
 
 });
+const imagenesRoutes = require("./routes/imagenes.routes");
+
+app.use("/api", imagenesRoutes);
+
+app.use("/uploads", express.static("uploads"));
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ----------LINEAS DE CODIGO FINALES--------------------
 // ======================================================
 // PUERTO DEL SERVIDOR
 // ======================================================

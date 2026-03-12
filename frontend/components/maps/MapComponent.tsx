@@ -68,7 +68,7 @@ function getArea(coords: number[][]) {
   return Math.abs(area / 2) * 111139 * 111139;
 }
 
-export default function MapComponent({ onPolygonChange }: any) {
+export default function MapComponent({ onPolygonChange, centerCoordinates }: any) {
   const [coordinates, setCoordinates] = useState<number[][] | null>(null);
 
   const onCreated = (e: any) => {
@@ -108,7 +108,7 @@ export default function MapComponent({ onPolygonChange }: any) {
   return (
     <div className="w-full">
       <MapContainer
-        center={[19.4326, -99.1332]}
+        center={centerCoordinates || [23.6345, -102.5528]}
         zoom={13}
         className="w-full h-[500px] rounded-lg z-0"
       >

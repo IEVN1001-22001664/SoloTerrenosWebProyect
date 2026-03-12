@@ -170,7 +170,23 @@ exports.createTerreno = async (req, res) => {
 
   try {
 
-    const { titulo, descripcion, precio, ubicacion, tipo } = req.body;
+    const {
+      titulo,
+      descripcion,
+      precio,
+      ubicacion,
+      tipo,
+      estado_region,
+      municipio,
+      colonia,
+      direccion,
+      codigo_postal,
+      topografia,
+      forma,
+      tipo_propiedad,
+      uso_suelo,
+      negociable
+    } = req.body;
     const usuario_id = req.user.id;
 
     let { poligono } = req.body;
@@ -214,14 +230,15 @@ exports.createTerreno = async (req, res) => {
 
     const autoAprobado = userResult.rows[0]?.auto_aprobado;
 
-    const estadoFinal = autoAprobado ? "aprobado" : "pendiente";
+    const estadoFinal = autoAprobado ? "aprobado" : "pendiente";//-----------------------------------------------
 
     // =================================
     // INSERTAR TERRENO
     // =================================
 
     const result = await pool.query(
-      `INSERT INTO terrenos 
+      `
+      INSERT INTO terrenos 
       (
         titulo,
         descripcion,
@@ -234,10 +251,22 @@ exports.createTerreno = async (req, res) => {
         centro_lat,
         centro_lng,
         area_m2,
-        perimetro_m
+        perimetro_m,
+        estado_region,
+        municipio,
+        colonia,
+        direccion,
+        codigo_postal,
+        topografia,
+        forma,
+        tipo_propiedad,
+        uso_suelo,
+        negociable
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-      RETURNING *`,
+      VALUES
+      ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
+      RETURNING *
+      `,
       [
         titulo,
         descripcion,
@@ -250,9 +279,19 @@ exports.createTerreno = async (req, res) => {
         centro.lat,
         centro.lng,
         area,
-        perimetro
+        perimetro,
+        estado_region,
+        municipio,
+        colonia,
+        direccion,
+        codigo_postal,
+        topografia,
+        forma,
+        tipo_propiedad,
+        uso_suelo,
+        negociable
       ]
-    );
+      );
 
     res.status(201).json(result.rows[0]);
 

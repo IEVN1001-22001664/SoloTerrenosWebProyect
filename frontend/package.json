@@ -22,7 +22,8 @@
     "react-dom": "19.2.3",
     "react-leaflet": "^5.0.0",
     "react-leaflet-cluster": "^4.0.0",
-    "react-leaflet-draw": "^0.21.0"
+    "react-leaflet-draw": "^0.21.0",
+    "react-number-format": "^5.4.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
