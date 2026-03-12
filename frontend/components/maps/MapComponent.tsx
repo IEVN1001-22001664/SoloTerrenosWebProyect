@@ -21,7 +21,6 @@ function ResizeMap() {
 }
 
 /* -------- CALCULAR CENTRO -------- */
-
 function getCenter(coords: number[][]) {
   let lat = 0;
   let lng = 0;
@@ -35,7 +34,6 @@ function getCenter(coords: number[][]) {
 }
 
 /* -------- CALCULAR PERIMETRO -------- */
-
 function getPerimeter(coords: number[][]) {
   let perimeter = 0;
 
@@ -54,7 +52,6 @@ function getPerimeter(coords: number[][]) {
 }
 
 /* -------- CALCULAR AREA -------- */
-
 function getArea(coords: number[][]) {
   let area = 0;
 
@@ -68,8 +65,14 @@ function getArea(coords: number[][]) {
   return Math.abs(area / 2) * 111139 * 111139;
 }
 
-export default function MapComponent({ onPolygonChange, centerCoordinates }: any) {
+interface Props {
+  onPolygonChange: (data: any) => void;
+  centerCoordinates?: [number, number] | null;
+}
+
+export default function MapComponent({ onPolygonChange, centerCoordinates }: Props) {
   const [coordinates, setCoordinates] = useState<number[][] | null>(null);
+  const [tipoMapa, setTipoMapa] = useState<"esri" | "osm">("esri");
 
   const onCreated = (e: any) => {
     const layer = e.layer;
@@ -86,8 +89,6 @@ export default function MapComponent({ onPolygonChange, centerCoordinates }: any
         latlng.lng,
       ]);
 
-      /* CALCULOS */
-
       const center = getCenter(latlngs);
       const perimeter = getPerimeter(latlngs);
       const area = getArea(latlngs);
@@ -100,24 +101,43 @@ export default function MapComponent({ onPolygonChange, centerCoordinates }: any
       };
 
       setCoordinates(latlngs);
-
       onPolygonChange(data);
     }
   };
 
   return (
     <div className="w-full">
+      {/* BOTÓN PARA CAMBIAR CAPA */}
+      <div className="mb-3 flex justify-end">
+        <button
+          type="button"
+          onClick={() =>
+            setTipoMapa((prev) => (prev === "esri" ? "osm" : "esri"))
+          }
+          className="rounded-lg bg-[#22341c] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#828d4b]"
+        >
+          {tipoMapa === "esri" ? "Ver calles" : "Ver satélite"}
+        </button>
+      </div>
+
       <MapContainer
         center={centerCoordinates || [23.6345, -102.5528]}
-        zoom={13}
+        zoom={15}
         className="w-full h-[500px] rounded-lg z-0"
       >
         <ResizeMap />
 
-        <TileLayer
-          attribution="Tiles © Esri"
-          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-        />
+        {tipoMapa === "esri" ? (
+          <TileLayer
+            attribution="Tiles © Esri"
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+          />
+        ) : (
+          <TileLayer
+            attribution="© OpenStreetMap"
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+        )}
 
         <FeatureGroup>
           <EditControl
@@ -135,11 +155,11 @@ export default function MapComponent({ onPolygonChange, centerCoordinates }: any
       </MapContainer>
 
       {coordinates && (
-        <div className="mt-4 p-4 bg-gray-100 rounded">
-          <h2 className="font-semibold mb-2">
+        <div className="mt-4 rounded-xl bg-gray-100 p-4">
+          <h2 className="mb-2 font-semibold">
             Coordenadas capturadas:
           </h2>
-          <pre className="text-sm overflow-auto">
+          <pre className="overflow-auto text-sm">
             {JSON.stringify(coordinates, null, 2)}
           </pre>
         </div>
