@@ -1,8 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect } from "react";
-import { MapContainer, TileLayer, FeatureGroup, useMap } from "react-leaflet";
+import { useEffect, useMemo, useState } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  FeatureGroup,
+  useMap,
+  Polygon,
+} from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -20,7 +26,9 @@ function ResizeMap() {
   return null;
 }
 
-/* -------- CALCULAR CENTRO -------- */
+/* ===================================== */
+/* CALCULAR CENTRO                       */
+/* ===================================== */
 function getCenter(coords: number[][]) {
   let lat = 0;
   let lng = 0;
@@ -33,7 +41,9 @@ function getCenter(coords: number[][]) {
   return [lat / coords.length, lng / coords.length];
 }
 
-/* -------- CALCULAR PERIMETRO -------- */
+/* ===================================== */
+/* CALCULAR PERÍMETRO                    */
+/* ===================================== */
 function getPerimeter(coords: number[][]) {
   let perimeter = 0;
 
@@ -51,7 +61,9 @@ function getPerimeter(coords: number[][]) {
   return perimeter;
 }
 
-/* -------- CALCULAR AREA -------- */
+/* ===================================== */
+/* CALCULAR ÁREA                         */
+/* ===================================== */
 function getArea(coords: number[][]) {
   let area = 0;
 
@@ -68,92 +80,168 @@ function getArea(coords: number[][]) {
 interface Props {
   onPolygonChange: (data: any) => void;
   centerCoordinates?: [number, number] | null;
+  tipoMapa?: "esri" | "osm";
+  initialPolygon?: number[][] | null;
 }
 
-export default function MapComponent({ onPolygonChange, centerCoordinates }: Props) {
-  const [coordinates, setCoordinates] = useState<number[][] | null>(null);
-  const [tipoMapa, setTipoMapa] = useState<"esri" | "osm">("esri");
+interface DrawControlProps {
+  onPolygonChange: (data: any) => void;
+  setCoordinates: React.Dispatch<React.SetStateAction<number[][] | null>>;
+}
 
+function DrawControl({ onPolygonChange, setCoordinates }: DrawControlProps) {
+  const map = useMap();
+
+  /* ===================================== */
+  /* EXTRAER Y CALCULAR DATOS DEL POLÍGONO */
+  /* ===================================== */
+  const procesarPoligono = (layer: any) => {
+    if (!(layer instanceof L.Polygon)) return;
+
+    const rawLatLngs = layer.getLatLngs() as any[];
+
+    const firstLevel = Array.isArray(rawLatLngs[0])
+      ? rawLatLngs[0]
+      : rawLatLngs;
+
+    const latlngs = firstLevel.map((latlng: any) => [
+      latlng.lat,
+      latlng.lng,
+    ]);
+
+    const center = getCenter(latlngs);
+    const perimeter = getPerimeter(latlngs);
+    const area = getArea(latlngs);
+
+    const data = {
+      polygon: latlngs,
+      center,
+      perimeter,
+      area,
+    };
+
+    setCoordinates(latlngs);
+    onPolygonChange(data);
+
+    return latlngs;
+  };
+
+  /* ===================================== */
+  /* CREAR POLÍGONO                        */
+  /* ===================================== */
   const onCreated = (e: any) => {
-    const layer = e.layer;
+    const latlngs = procesarPoligono(e.layer);
 
-    if (layer instanceof L.Polygon) {
-      const rawLatLngs = layer.getLatLngs() as any[];
-
-      const firstLevel = Array.isArray(rawLatLngs[0])
-        ? rawLatLngs[0]
-        : rawLatLngs;
-
-      const latlngs = firstLevel.map((latlng: any) => [
-        latlng.lat,
-        latlng.lng,
-      ]);
-
-      const center = getCenter(latlngs);
-      const perimeter = getPerimeter(latlngs);
-      const area = getArea(latlngs);
-
-      const data = {
-        polygon: latlngs,
-        center,
-        perimeter,
-        area,
-      };
-
-      setCoordinates(latlngs);
-      onPolygonChange(data);
+    if (latlngs && latlngs.length > 0) {
+      const bounds = L.latLngBounds(latlngs as L.LatLngExpression[]);
+      map.fitBounds(bounds, { padding: [40, 40] });
     }
   };
 
-  return (
-    <div className="w-full">
-      {/* BOTÓN PARA CAMBIAR CAPA */}
-      <div className="mb-3 flex justify-end">
-        <button
-          type="button"
-          onClick={() =>
-            setTipoMapa((prev) => (prev === "esri" ? "osm" : "esri"))
-          }
-          className="rounded-lg bg-[#22341c] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#828d4b]"
-        >
-          {tipoMapa === "esri" ? "Ver calles" : "Ver satélite"}
-        </button>
-      </div>
+  /* ===================================== */
+  /* EDITAR POLÍGONO                       */
+  /* ===================================== */
+  const onEdited = (e: any) => {
+    e.layers.eachLayer((layer: any) => {
+      procesarPoligono(layer);
+    });
+  };
 
+  /* ===================================== */
+  /* ELIMINAR POLÍGONO                     */
+  /* ===================================== */
+  const onDeleted = () => {
+    setCoordinates(null);
+    onPolygonChange(null);
+  };
+
+  return (
+    <FeatureGroup>
+      <EditControl
+        position="topright"
+        onCreated={onCreated}
+        onEdited={onEdited}
+        onDeleted={onDeleted}
+        draw={{
+          rectangle: false,
+          circle: false,
+          marker: false,
+          circlemarker: false,
+          polyline: false,
+        }}
+      />
+    </FeatureGroup>
+  );
+}
+
+export default function MapComponent({
+  onPolygonChange,
+  centerCoordinates,
+  tipoMapa = "esri",
+  initialPolygon = null,
+}: Props) {
+  const [coordinates, setCoordinates] = useState<number[][] | null>(
+    initialPolygon || null
+  );
+  const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+  const mapboxUrl = `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`;
+
+  useEffect(() => {
+    setCoordinates(initialPolygon || null);
+  }, [initialPolygon]);
+
+  const polygonPositions = useMemo(() => {
+    return initialPolygon
+      ? (initialPolygon as [number, number][])
+      : null;
+  }, [initialPolygon]);
+
+  return (
+    <div className="w-full h-full">
       <MapContainer
         center={centerCoordinates || [23.6345, -102.5528]}
-        zoom={15}
-        className="w-full h-[500px] rounded-lg z-0"
+        zoom={18}
+        maxZoom={20}
+        className="w-full h-full rounded-lg z-0"
       >
         <ResizeMap />
 
+        {/* CAPA BASE DEL MAPA */}
         {tipoMapa === "esri" ? (
           <TileLayer
-            attribution="Tiles © Esri"
-            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+            attribution="© Mapbox"
+            url={mapboxUrl}
+            tileSize={512}
+            zoomOffset={-1}
+            maxZoom={22}
           />
         ) : (
           <TileLayer
             attribution="© OpenStreetMap"
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maxZoom={20}
           />
         )}
 
-        <FeatureGroup>
-          <EditControl
-            position="topright"
-            onCreated={onCreated}
-            draw={{
-              rectangle: false,
-              circle: false,
-              marker: false,
-              circlemarker: false,
-              polyline: false,
+        {/* POLÍGONO GUARDADO */}
+        {polygonPositions && (
+          <Polygon
+            positions={polygonPositions}
+            pathOptions={{
+              color: "#22341c",
+              weight: 3,
             }}
           />
-        </FeatureGroup>
+        )}
+
+        {/* CAPA DE DIBUJO */}
+        <DrawControl
+          onPolygonChange={onPolygonChange}
+          setCoordinates={setCoordinates}
+        />
       </MapContainer>
 
+      {/* DEBUG / COORDENADAS CAPTURADAS */}
       {coordinates && (
         <div className="mt-4 rounded-xl bg-gray-100 p-4">
           <h2 className="mb-2 font-semibold">

@@ -35,7 +35,11 @@ export default function PublicarForm() {
     tipo_propiedad: "",
 
     poligono: null,
-    imagenes: []
+    imagenes: [],
+
+    mapaVisible: false,
+    mapCenter: null,
+    tipoMapa: "osm",
   });
 
   const next = () => setStep(step + 1);

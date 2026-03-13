@@ -4,8 +4,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 
-const MapComponent = dynamic(
-  () => import("../../maps/MapComponent"),
+const MapaComponent = dynamic(
+  () => import("../../maps/mapaConfig"),
   { ssr: false }
 );
 
@@ -50,7 +50,8 @@ const estadosMexico = [
 ];
 
 export default function UbicacionMapa({ formData, setFormData }: Props) {
-  const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
+  const mapCenter = formData.mapCenter;
+  const mapaVisible = formData.mapaVisible;
 
   const [busquedaEstado, setBusquedaEstado] = useState("");
   const [mostrarEstados, setMostrarEstados] = useState(false);
@@ -60,7 +61,6 @@ export default function UbicacionMapa({ formData, setFormData }: Props) {
   const [cargandoSugerencias, setCargandoSugerencias] = useState(false);
   const [busquedaDireccionActiva, setBusquedaDireccionActiva] = useState(false);
 
-  const [mapaVisible, setMapaVisible] = useState(false);
   const [cargandoMapa, setCargandoMapa] = useState(false);
 
   const contenedorDireccionRef = useRef<HTMLDivElement | null>(null);
@@ -116,14 +116,13 @@ export default function UbicacionMapa({ formData, setFormData }: Props) {
       colonia: "",
       direccion: "",
       codigo_postal: "",
-      poligono: null
+      poligono: null,
+      mapaVisible: false,
+      mapCenter: null
     });
 
     setBusquedaEstado("");
     setMostrarEstados(false);
-    setMapCenter(null);
-    setMapaVisible(false);
-
     setSugerenciasDireccion([]);
     setMostrarSugerencias(false);
     setBusquedaDireccionActiva(false);
@@ -135,11 +134,10 @@ export default function UbicacionMapa({ formData, setFormData }: Props) {
   const invalidarMapa = (nuevosDatos: any) => {
     setFormData({
       ...nuevosDatos,
-      poligono: null
+      poligono: null,
+      mapaVisible: false,
+      mapCenter: null
     });
-
-    setMapaVisible(false);
-    setMapCenter(null);
   };
 
   /* ===================================== */
@@ -252,8 +250,11 @@ export default function UbicacionMapa({ formData, setFormData }: Props) {
       const data = await response.json();
 
       if (data && data.length > 0) {
-        setMapCenter([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
-        setMapaVisible(true);
+        setFormData({
+          ...formData,
+          mapCenter: [parseFloat(data[0].lat), parseFloat(data[0].lon)],
+          mapaVisible: true
+        });
       } else {
         alert("No se pudo ubicar la dirección en el mapa.");
       }
@@ -486,84 +487,30 @@ export default function UbicacionMapa({ formData, setFormData }: Props) {
                 {cargandoMapa ? "Ubicando..." : "Ver mapa"}
               </button>
             </div>
-
-            {!ubicacionCompleta && (
-              <p className="mt-2 text-xs text-[#817d58]">
-                Completa estado, municipio, colonia, dirección y código postal para habilitar el mapa.
-              </p>
-            )}
           </div>
         </div>
       </div>
 
-      {!mapaVisible && (
-        <div className="rounded-2xl border border-dashed border-[#817d58]/30 bg-[#828d4b]/5 p-6 text-center">
-          <p className="text-[#22341c] font-medium">
-            Completa la ubicación y presiona <span className="font-semibold">“Ver mapa”</span> para dibujar el terreno.
-          </p>
-        </div>
-      )}
-
-      {mapaVisible && mapCenter && (
-        <div className="animate-[slideFadeIn_.45s_ease-out]">
-          <style jsx>{`
-            @keyframes slideFadeIn {
-              from {
-                opacity: 0;
-                transform: translateY(24px);
-              }
-              to {
-                opacity: 1;
-                transform: translateY(0);
-              }
-            }
-          `}</style>
-
-          <div>
-            <h3 className="font-semibold text-[#22341c] mb-2">
-              Dibujar terreno en el mapa
-            </h3>
-
-            <div className="h-[450px] border border-[#817d58]/40 rounded-xl overflow-hidden shadow-sm">
-              <MapComponent
-                centerCoordinates={mapCenter}
-                onPolygonChange={(data: any) =>
-                  setFormData({
-                    ...formData,
-                    poligono: data
-                  })
-                }
-              />
-            </div>
-
-            {formData.poligono && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                <div className="bg-[#828d4b]/10 border border-[#828d4b]/40 p-4 rounded-xl text-center">
-                  <p className="text-sm text-[#817d58]">Área del terreno</p>
-                  <p className="text-2xl font-bold text-[#22341c]">
-                    {Math.round(formData.poligono.area)} m²
-                  </p>
-                </div>
-
-                <div className="bg-[#828d4b]/10 border border-[#828d4b]/40 p-4 rounded-xl text-center">
-                  <p className="text-sm text-[#817d58]">Perímetro</p>
-                  <p className="text-2xl font-bold text-[#22341c]">
-                    {Math.round(formData.poligono.perimeter)} m
-                  </p>
-                </div>
-
-                <div className="bg-[#828d4b]/10 border border-[#828d4b]/40 p-4 rounded-xl text-center">
-                  <p className="text-sm text-[#817d58]">Centro del terreno</p>
-                  <p className="text-xs text-[#22341c] break-all">
-                    {formData.poligono.center[0].toFixed(6)},{" "}
-                    {formData.poligono.center[1].toFixed(6)}
-                  </p>
-                </div>
-              </div>
-            )}
+      {/* BLOQUE DEL MAPA */}
+      <div className="space-y-6">
+        {!mapaVisible && (
+          <div className="rounded-2xl border border-dashed border-[#817d58]/30 bg-[#828d4b]/5 p-6 text-center">
+            <p className="text-[#22341c] font-medium">
+              Completa la ubicación y presiona{" "}
+              <span className="font-semibold">“Ver mapa”</span> para dibujar el
+              terreno.
+            </p>
           </div>
-        </div>
-      )}
+        )}
+
+        {mapaVisible && mapCenter && (
+          <MapaComponent
+            mapCenter={mapCenter}
+            formData={formData}
+            setFormData={setFormData}
+          />
+        )}
+      </div>
     </div>
   );
 }
