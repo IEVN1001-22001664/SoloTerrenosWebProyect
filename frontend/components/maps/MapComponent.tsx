@@ -88,6 +88,39 @@ interface DrawControlProps {
   onPolygonChange: (data: any) => void;
   setCoordinates: React.Dispatch<React.SetStateAction<number[][] | null>>;
 }
+function FitPolygonBounds({ polygon }: { polygon: number[][] | null }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!polygon || polygon.length === 0) return;
+
+    const bounds = L.latLngBounds(polygon as L.LatLngExpression[]);
+    map.fitBounds(bounds, { padding: [40, 40] });
+  }, [map, polygon]);
+
+  return null;
+}
+
+  function UpdateMapCenter({
+    centerCoordinates,
+  }: {
+    centerCoordinates?: [number, number] | null;
+  }) {
+    const map = useMap();
+
+    useEffect(() => {
+      if (!centerCoordinates) return;
+
+      map.setView(centerCoordinates, 17, {
+        animate: true,
+        duration: 1.2,
+      });
+    }, [map, centerCoordinates]);
+
+    return null;
+  }
+
+
 
 function DrawControl({ onPolygonChange, setCoordinates }: DrawControlProps) {
   const map = useMap();
@@ -205,6 +238,7 @@ export default function MapComponent({
         className="w-full h-full rounded-lg z-0"
       >
         <ResizeMap />
+        <UpdateMapCenter centerCoordinates={centerCoordinates} />
 
         {/* CAPA BASE DEL MAPA */}
         {tipoMapa === "esri" ? (
@@ -219,20 +253,22 @@ export default function MapComponent({
           <TileLayer
             attribution="© OpenStreetMap"
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            maxZoom={20}
+            maxZoom={22}
           />
         )}
 
+        {polygonPositions && <FitPolygonBounds polygon={initialPolygon} />}
         {/* POLÍGONO GUARDADO */}
         {polygonPositions && (
           <Polygon
             positions={polygonPositions}
             pathOptions={{
-              color: "#22341c",
+              color: "#06489a", /*----------------------------- COLOR DEL POLIGONO ----------------*/
               weight: 3,
             }}
           />
         )}
+        
 
         {/* CAPA DE DIBUJO */}
         <DrawControl

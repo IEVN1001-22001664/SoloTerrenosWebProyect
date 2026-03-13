@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import { useState } from "react";
 import dynamic from "next/dynamic";
 
 const MapComponent = dynamic(
@@ -20,6 +21,46 @@ export default function MapaConfig({
   setFormData,
 }: Props) {
   const tipoMapa = formData.tipoMapa || "osm";
+
+  const [latitudManual, setLatitudManual] = useState("");
+  const [longitudManual, setLongitudManual] = useState("");
+  const [errorCoordenadas, setErrorCoordenadas] = useState("");
+
+    const buscarPorCoordenadas = () => {
+    const lat = formData.latitud_manual?.trim();
+    const lng = formData.longitud_manual?.trim();
+
+    if (!lat || !lng) {
+      setErrorCoordenadas("Debes escribir latitud y longitud.");
+      return;
+    }
+
+    const latNum = Number(lat);
+    const lngNum = Number(lng);
+
+    if (Number.isNaN(latNum) || Number.isNaN(lngNum)) {
+      setErrorCoordenadas("Las coordenadas deben ser números válidos.");
+      return;
+    }
+
+    if (latNum < -90 || latNum > 90) {
+      setErrorCoordenadas("La latitud debe estar entre -90 y 90.");
+      return;
+    }
+
+    if (lngNum < -180 || lngNum > 180) {
+      setErrorCoordenadas("La longitud debe estar entre -180 y 180.");
+      return;
+    }
+
+    setErrorCoordenadas("");
+
+    setFormData({
+      ...formData,
+      mapCenter: [latNum, lngNum],
+      mapaVisible: true,
+    });
+  };
 
   return (
     <div className="animate-[slideFadeIn_.45s_ease-out]">
@@ -128,22 +169,42 @@ export default function MapaConfig({
                 <input
                   type="text"
                   placeholder="Latitud"
-                  className="w-full rounded-lg border border-[#817d58]/30 p-3 text-sm outline-none"
-                  disabled
+                  value={formData.latitud_manual || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      latitud_manual: e.target.value,
+                    })
+                  }
+                  className="w-full rounded-lg border border-[#817d58]/30 p-3 text-sm outline-none focus:border-[#828d4b] focus:ring-2 focus:ring-[#828d4b]/20"
                 />
+
                 <input
                   type="text"
                   placeholder="Longitud"
-                  className="w-full rounded-lg border border-[#817d58]/30 p-3 text-sm outline-none"
-                  disabled
+                  value={formData.longitud_manual || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      longitud_manual: e.target.value,
+                    })
+                  }
+                  className="w-full rounded-lg border border-[#817d58]/30 p-3 text-sm outline-none focus:border-[#828d4b] focus:ring-2 focus:ring-[#828d4b]/20"
                 />
+
                 <button
                   type="button"
-                  className="w-full cursor-not-allowed rounded-lg bg-[#828d4b] px-3 py-2 text-sm font-medium text-white opacity-60"
-                  disabled
+                  onClick={buscarPorCoordenadas}
+                  className="w-full rounded-lg bg-[#828d4b] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#22341c]"
                 >
                   Buscar
                 </button>
+
+                {errorCoordenadas && (
+                  <p className="text-sm text-red-600">
+                    {errorCoordenadas}
+                  </p>
+                )}
               </div>
             </div>
 
