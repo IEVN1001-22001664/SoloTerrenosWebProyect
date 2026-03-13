@@ -5,7 +5,7 @@ interface Props {
   setFormData: (data: any) => void;
 }
 
-export default function caracteristicasTerreno({ formData, setFormData }: Props) {
+export default function CaracteristicasTerreno({ formData, setFormData }: Props) {
 
   /* ============================= */
   /* MANEJAR CAMBIOS              */
@@ -34,7 +34,7 @@ export default function caracteristicasTerreno({ formData, setFormData }: Props)
         </h2>
 
         <p className="text-sm text-[#817d58]">
-          Define las características físicas y legales del terreno.
+          Selecciona las características principales del terreno.
         </p>
       </div>
 

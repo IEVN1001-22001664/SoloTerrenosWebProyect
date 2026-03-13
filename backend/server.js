@@ -21,7 +21,7 @@ const pool = require("./db");
 const authRoutes = require("./routes/auth.routes");
 const terrenosRoutes = require("./routes/terrenos.routes");
 const adminRoutes = require("./routes/admin.routes");
-
+const sepomexRoutes = require("./routes/sepomex.routes");
 
 // ======================================================
 // CREACIÓN DE LA APLICACIÓN EXPRESS
@@ -87,6 +87,9 @@ app.use("/api/terrenos", terrenosRoutes);
 
 // administración
 app.use("/api/admin", adminRoutes);
+
+// sepomex
+app.use("/api/sepomex", sepomexRoutes);
 
 
 // ======================================================

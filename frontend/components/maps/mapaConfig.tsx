@@ -21,12 +21,9 @@ export default function MapaConfig({
   setFormData,
 }: Props) {
   const tipoMapa = formData.tipoMapa || "osm";
-
-  const [latitudManual, setLatitudManual] = useState("");
-  const [longitudManual, setLongitudManual] = useState("");
   const [errorCoordenadas, setErrorCoordenadas] = useState("");
 
-    const buscarPorCoordenadas = () => {
+  const buscarPorCoordenadas = () => {
     const lat = formData.latitud_manual?.trim();
     const lng = formData.longitud_manual?.trim();
 
@@ -58,7 +55,6 @@ export default function MapaConfig({
     setFormData({
       ...formData,
       mapCenter: [latNum, lngNum],
-      mapaVisible: true,
     });
   };
 

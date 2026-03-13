@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 
 const MapaComponent = dynamic(
@@ -51,29 +51,16 @@ const estadosMexico = [
 
 export default function UbicacionMapa({ formData, setFormData }: Props) {
   const mapCenter = formData.mapCenter;
-  const mapaVisible = formData.mapaVisible;
 
   const [busquedaEstado, setBusquedaEstado] = useState("");
   const [mostrarEstados, setMostrarEstados] = useState(false);
-
-  const [sugerenciasDireccion, setSugerenciasDireccion] = useState<any[]>([]);
-  const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
-  const [cargandoSugerencias, setCargandoSugerencias] = useState(false);
-  const [busquedaDireccionActiva, setBusquedaDireccionActiva] = useState(false);
-
   const [cargandoMapa, setCargandoMapa] = useState(false);
 
-  const contenedorDireccionRef = useRef<HTMLDivElement | null>(null);
+  const [coloniasDisponibles, setColoniasDisponibles] = useState<string[]>([]);
+  const [municipiosDisponibles, setMunicipiosDisponibles] = useState<string[]>([]);
 
-  const estadoSeleccionado = Boolean(formData.estado_region?.trim());
-
-  const ubicacionCompleta = Boolean(
-    formData.estado_region?.trim() &&
-      formData.municipio?.trim() &&
-      formData.colonia?.trim() &&
-      formData.direccion?.trim() &&
-      formData.codigo_postal?.trim()
-  );
+  const [cargandoSepomex, setCargandoSepomex] = useState(false);
+  const [errorSepomex, setErrorSepomex] = useState("");
 
   const estadosFiltrados = useMemo(() => {
     const texto = busquedaEstado.toLowerCase().trim();
@@ -86,87 +73,113 @@ export default function UbicacionMapa({ formData, setFormData }: Props) {
   }, [busquedaEstado]);
 
   /* ===================================== */
-  /* CERRAR SUGERENCIAS AL HACER CLICK FUERA */
+  /* CARGAR DATOS DE SEPOMEX POR CP        */
   /* ===================================== */
   useEffect(() => {
-    const handleClickFuera = (event: MouseEvent) => {
-      if (
-        contenedorDireccionRef.current &&
-        !contenedorDireccionRef.current.contains(event.target as Node)
-      ) {
-        setMostrarSugerencias(false);
+    const codigoPostal = formData.codigo_postal?.trim();
+
+    if (!codigoPostal || codigoPostal.length !== 5) {
+      setErrorSepomex("");
+      setMunicipiosDisponibles([]);
+      setColoniasDisponibles([]);
+
+      if (!codigoPostal || codigoPostal.length < 5) {
+        setFormData((prev: any) => ({
+          ...prev,
+          estado_region: "",
+          municipio: "",
+          colonia: ""
+        }));
       }
-    };
 
-    document.addEventListener("mousedown", handleClickFuera);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickFuera);
-    };
-  }, []);
-
-  /* ===================================== */
-  /* SELECCIONAR ESTADO                    */
-  /* ===================================== */
-  const seleccionarEstado = (estado: string) => {
-    setFormData({
-      ...formData,
-      estado_region: estado,
-      municipio: "",
-      colonia: "",
-      direccion: "",
-      codigo_postal: "",
-      poligono: null,
-      mapaVisible: false,
-      mapCenter: null
-    });
-
-    setBusquedaEstado("");
-    setMostrarEstados(false);
-    setSugerenciasDireccion([]);
-    setMostrarSugerencias(false);
-    setBusquedaDireccionActiva(false);
-  };
-
-  /* ===================================== */
-  /* INVALIDAR MAPA SI CAMBIA UBICACIÓN    */
-  /* ===================================== */
-  const invalidarMapa = (nuevosDatos: any) => {
-    setFormData({
-      ...nuevosDatos,
-      poligono: null,
-      mapaVisible: false,
-      mapCenter: null
-    });
-  };
-
-  /* ===================================== */
-  /* AUTOCOMPLETADO SOLO PARA DIRECCIÓN    */
-  /* ===================================== */
-  useEffect(() => {
-    const direccion = formData.direccion?.trim();
-    const estado = formData.estado_region?.trim();
-
-    if (
-      !estadoSeleccionado ||
-      !direccion ||
-      direccion.length < 3 ||
-      !busquedaDireccionActiva
-    ) {
-      setSugerenciasDireccion([]);
-      setMostrarSugerencias(false);
       return;
     }
 
     const timer = setTimeout(async () => {
       try {
-        setCargandoSugerencias(true);
+        setCargandoSepomex(true);
+        setErrorSepomex("");
 
-        const consulta = [direccion, estado, "México"]
+        const response = await fetch(
+          `http://localhost:5000/api/sepomex/${codigoPostal}`,
+          {
+            method: "GET",
+            credentials: "include"
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          setMunicipiosDisponibles([]);
+          setColoniasDisponibles([]);
+
+          setFormData((prev: any) => ({
+            ...prev,
+            estado_region: "",
+            municipio: "",
+            colonia: ""
+          }));
+
+          setErrorSepomex(data.message || "No se encontró el código postal.");
+          return;
+        }
+
+        const municipio = data.municipio || "";
+        const estado = data.estado || "";
+        const colonias = Array.isArray(data.colonias) ? data.colonias : [];
+
+        setMunicipiosDisponibles(municipio ? [municipio] : []);
+        setColoniasDisponibles(colonias);
+
+        setFormData((prev: any) => ({
+          ...prev,
+          estado_region: estado,
+          municipio: municipio,
+          colonia: colonias.includes(prev.colonia) ? prev.colonia : ""
+        }));
+      } catch (error) {
+        console.error("Error consultando SEPOMEX:", error);
+
+        setMunicipiosDisponibles([]);
+        setColoniasDisponibles([]);
+
+        setFormData((prev: any) => ({
+          ...prev,
+          estado_region: "",
+          municipio: "",
+          colonia: ""
+        }));
+
+        setErrorSepomex("Error al consultar el código postal.");
+      } finally {
+        setCargandoSepomex(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [formData.codigo_postal, setFormData]);
+
+  /* ===================================== */
+  /* CENTRAR MAPA POR ESTADO + MUNICIPIO + COLONIA */
+  /* ===================================== */
+  useEffect(() => {
+    const estado = formData.estado_region?.trim();
+    const municipio = formData.municipio?.trim();
+    const colonia = formData.colonia?.trim();
+
+    if (formData.poligono?.polygon?.length) return;
+    if (!estado || !municipio || !colonia) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        setCargandoMapa(true);
+
+        const consulta = [colonia, municipio, estado, "México"]
           .filter(Boolean)
           .join(", ");
 
-        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&countrycodes=mx&q=${encodeURIComponent(
+        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=mx&q=${encodeURIComponent(
           consulta
         )}`;
 
@@ -178,92 +191,90 @@ export default function UbicacionMapa({ formData, setFormData }: Props) {
 
         const data = await response.json();
 
-        setSugerenciasDireccion(data || []);
-        setMostrarSugerencias(true);
+        if (data && data.length > 0) {
+          setFormData((prev: any) => ({
+            ...prev,
+            mapCenter: [parseFloat(data[0].lat), parseFloat(data[0].lon)]
+          }));
+        }
       } catch (error) {
-        console.error("Error obteniendo sugerencias:", error);
-        setSugerenciasDireccion([]);
-        setMostrarSugerencias(true);
+        console.error("Error centrando mapa por ubicación:", error);
       } finally {
-        setCargandoSugerencias(false);
+        setCargandoMapa(false);
       }
     }, 500);
 
     return () => clearTimeout(timer);
   }, [
-    formData.direccion,
     formData.estado_region,
-    estadoSeleccionado,
-    busquedaDireccionActiva
+    formData.municipio,
+    formData.colonia,
+    formData.poligono,
+    setFormData
   ]);
 
   /* ===================================== */
-  /* SELECCIONAR SUGERENCIA                */
+  /* SELECCIONAR ESTADO                    */
   /* ===================================== */
-  const seleccionarSugerencia = (item: any) => {
-    const address = item.address || {};
-
-    const direccionConstruida = [address.road, address.house_number]
-      .filter(Boolean)
-      .join(" ");
-
-    invalidarMapa({
+  const seleccionarEstado = (estado: string) => {
+    setFormData({
       ...formData,
-      direccion: direccionConstruida || item.display_name || formData.direccion
+      estado_region: estado,
+      municipio: "",
+      colonia: "",
+      direccion: "",
+      mapCenter: null,
+      poligono: null
     });
 
-    setSugerenciasDireccion([]);
-    setMostrarSugerencias(false);
-    setBusquedaDireccionActiva(false);
+    setMunicipiosDisponibles([]);
+    setColoniasDisponibles([]);
+    setBusquedaEstado("");
+    setMostrarEstados(false);
   };
 
   /* ===================================== */
-  /* ABRIR MAPA MANUALMENTE                */
+  /* CAMBIO DE CAMPOS DE UBICACIÓN         */
   /* ===================================== */
-  const abrirMapa = async () => {
-    if (!ubicacionCompleta) return;
-
-    try {
-      setCargandoMapa(true);
-
-      const consulta = [
-        formData.direccion,
-        formData.colonia,
-        formData.municipio,
-        formData.estado_region,
-        formData.codigo_postal,
-        "México"
-      ]
-        .filter(Boolean)
-        .join(", ");
-
-      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=mx&q=${encodeURIComponent(
-        consulta
-      )}`;
-
-      const response = await fetch(url, {
-        headers: {
-          "Accept-Language": "es"
-        }
+  const actualizarUbicacion = (campo: string, valor: string) => {
+    if (campo === "codigo_postal") {
+      setFormData({
+        ...formData,
+        codigo_postal: valor,
+        estado_region: "",
+        municipio: "",
+        colonia: "",
+        mapCenter: null,
+        poligono: null
       });
-
-      const data = await response.json();
-
-      if (data && data.length > 0) {
-        setFormData({
-          ...formData,
-          mapCenter: [parseFloat(data[0].lat), parseFloat(data[0].lon)],
-          mapaVisible: true
-        });
-      } else {
-        alert("No se pudo ubicar la dirección en el mapa.");
-      }
-    } catch (error) {
-      console.error("Error abriendo mapa:", error);
-      alert("Ocurrió un error al intentar ubicar la dirección.");
-    } finally {
-      setCargandoMapa(false);
+      return;
     }
+
+    if (campo === "municipio") {
+      setFormData({
+        ...formData,
+        municipio: valor,
+        colonia: "",
+        mapCenter: null,
+        poligono: null
+      });
+      return;
+    }
+
+    if (campo === "colonia") {
+      setFormData({
+        ...formData,
+        colonia: valor,
+        mapCenter: null,
+        poligono: null
+      });
+      return;
+    }
+
+    setFormData({
+      ...formData,
+      [campo]: valor
+    });
   };
 
   const clasesInputBase =
@@ -281,12 +292,41 @@ export default function UbicacionMapa({ formData, setFormData }: Props) {
         </h2>
 
         <p className="text-sm text-[#817d58] mt-1">
-          Completa la ubicación y después habilita el mapa manualmente.
+          Completa la ubicación general del terreno. El mapa se actualizará con base en código postal, estado, municipio y colonia.
         </p>
       </div>
 
       <div className="rounded-2xl border border-[#817d58]/20 bg-white p-6 shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* CÓDIGO POSTAL */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-[#22341c] mb-2">
+              Código postal <span className="text-red-500">*</span>
+            </label>
+
+            <input
+              type="text"
+              placeholder="Ej. 37260"
+              value={formData.codigo_postal}
+              onChange={(e) =>
+                actualizarUbicacion("codigo_postal", e.target.value)
+              }
+              className={`${clasesInputBase} ${clasesInputActiva}`}
+            />
+
+            {cargandoSepomex && (
+              <p className="mt-2 text-xs text-[#817d58]">
+                Consultando código postal...
+              </p>
+            )}
+
+            {errorSepomex && (
+              <p className="mt-2 text-xs text-red-600">
+                {errorSepomex}
+              </p>
+            )}
+          </div>
+
           {/* ESTADO */}
           <div className="md:col-span-2 relative">
             <label className="block text-sm font-medium text-[#22341c] mb-2">
@@ -303,7 +343,7 @@ export default function UbicacionMapa({ formData, setFormData }: Props) {
                   formData.estado_region ? "text-[#22341c]" : "text-gray-400"
                 }
               >
-                {formData.estado_region || "Debes seleccionar una opción"}
+                {formData.estado_region || "Selecciona un estado"}
               </span>
 
               <span className="text-[#22341c] text-lg">
@@ -349,21 +389,28 @@ export default function UbicacionMapa({ formData, setFormData }: Props) {
               Municipio o alcaldía <span className="text-red-500">*</span>
             </label>
 
-            <input
-              type="text"
-              placeholder="Escribe el municipio"
+            <select
               value={formData.municipio}
-              disabled={!estadoSeleccionado}
+              disabled={!formData.estado_region}
               onChange={(e) =>
-                invalidarMapa({
-                  ...formData,
-                  municipio: e.target.value
-                })
+                actualizarUbicacion("municipio", e.target.value)
               }
               className={`${clasesInputBase} ${
-                estadoSeleccionado ? clasesInputActiva : clasesInputBloqueada
+                formData.estado_region ? clasesInputActiva : clasesInputBloqueada
               }`}
-            />
+            >
+              <option value="">
+                {formData.estado_region
+                  ? "Selecciona un municipio"
+                  : "Primero selecciona un estado"}
+              </option>
+
+              {municipiosDisponibles.map((municipio) => (
+                <option key={municipio} value={municipio}>
+                  {municipio}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* COLONIA */}
@@ -372,144 +419,67 @@ export default function UbicacionMapa({ formData, setFormData }: Props) {
               Colonia o barrio <span className="text-red-500">*</span>
             </label>
 
+            <select
+              value={formData.colonia}
+              disabled={!formData.municipio}
+              onChange={(e) =>
+                actualizarUbicacion("colonia", e.target.value)
+              }
+              className={`${clasesInputBase} ${
+                formData.municipio ? clasesInputActiva : clasesInputBloqueada
+              }`}
+            >
+              <option value="">
+                {formData.municipio
+                  ? "Selecciona una colonia"
+                  : "Primero selecciona un municipio"}
+              </option>
+
+              {coloniasDisponibles.map((colonia) => (
+                <option key={colonia} value={colonia}>
+                  {colonia}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* DIRECCIÓN / REFERENCIA */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-[#22341c] mb-2">
+              Calle o referencia aproximada
+            </label>
+
             <input
               type="text"
-              placeholder="Escribe la colonia"
-              value={formData.colonia}
-              disabled={!estadoSeleccionado}
+              placeholder="Ej. Camino vecinal, frente al pozo, a 500 m de la carretera..."
+              value={formData.direccion}
+              disabled={!formData.estado_region}
               onChange={(e) =>
-                invalidarMapa({
+                setFormData({
                   ...formData,
-                  colonia: e.target.value
+                  direccion: e.target.value
                 })
               }
               className={`${clasesInputBase} ${
-                estadoSeleccionado ? clasesInputActiva : clasesInputBloqueada
+                formData.estado_region ? clasesInputActiva : clasesInputBloqueada
               }`}
             />
-          </div>
-
-          {/* DIRECCIÓN */}
-          <div
-            ref={contenedorDireccionRef}
-            className="md:col-span-2 relative"
-          >
-            <label className="block text-sm font-medium text-[#22341c] mb-2">
-              Dirección aproximada <span className="text-red-500">*</span>
-            </label>
-
-            <input
-              type="text"
-              placeholder="Escribe calle, referencia o dirección"
-              value={formData.direccion}
-              disabled={!estadoSeleccionado}
-              onFocus={() => {
-                if (sugerenciasDireccion.length > 0 && busquedaDireccionActiva) {
-                  setMostrarSugerencias(true);
-                }
-              }}
-              onChange={(e) => {
-                invalidarMapa({
-                  ...formData,
-                  direccion: e.target.value
-                });
-                setBusquedaDireccionActiva(true);
-              }}
-              className={`${clasesInputBase} ${
-                estadoSeleccionado ? clasesInputActiva : clasesInputBloqueada
-              }`}
-            />
-
-            {estadoSeleccionado && mostrarSugerencias && (
-              <div className="absolute z-20 mt-2 w-full rounded-2xl border border-[#817d58]/20 bg-white shadow-xl overflow-hidden">
-                {cargandoSugerencias ? (
-                  <div className="px-4 py-3 text-sm text-[#817d58]">
-                    Buscando sugerencias...
-                  </div>
-                ) : sugerenciasDireccion.length > 0 ? (
-                  <div className="max-h-72 overflow-y-auto">
-                    {sugerenciasDireccion.map((item, index) => (
-                      <button
-                        key={`${item.place_id}-${index}`}
-                        type="button"
-                        onClick={() => seleccionarSugerencia(item)}
-                        className="block w-full border-b border-[#817d58]/10 px-4 py-3 text-left text-sm text-[#22341c] transition hover:bg-[#828d4b]/10"
-                      >
-                        {item.display_name}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  busquedaDireccionActiva &&
-                  formData.direccion?.trim().length >= 3 && (
-                    <div className="px-4 py-3 text-sm text-gray-500">
-                      No se encontraron sugerencias.
-                    </div>
-                  )
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* CÓDIGO POSTAL + BOTÓN */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-[#22341c] mb-2">
-              Código postal <span className="text-red-500">*</span>
-            </label>
-
-            <div className="flex flex-col md:flex-row gap-3">
-              <input
-                type="text"
-                placeholder="Ej. 37260"
-                value={formData.codigo_postal}
-                disabled={!estadoSeleccionado}
-                onChange={(e) =>
-                  invalidarMapa({
-                    ...formData,
-                    codigo_postal: e.target.value
-                  })
-                }
-                className={`flex-1 ${clasesInputBase} ${
-                  estadoSeleccionado ? clasesInputActiva : clasesInputBloqueada
-                }`}
-              />
-
-              <button
-                type="button"
-                onClick={abrirMapa}
-                disabled={!ubicacionCompleta || cargandoMapa}
-                className={`px-5 py-3 rounded-xl font-medium transition ${
-                  ubicacionCompleta && !cargandoMapa
-                    ? "bg-[#22341c] text-white hover:bg-[#828d4b]"
-                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                }`}
-              >
-                {cargandoMapa ? "Ubicando..." : "Ver mapa"}
-              </button>
-            </div>
           </div>
         </div>
       </div>
 
-      {/* BLOQUE DEL MAPA */}
-      <div className="space-y-6">
-        {!mapaVisible && (
-          <div className="rounded-2xl border border-dashed border-[#817d58]/30 bg-[#828d4b]/5 p-6 text-center">
-            <p className="text-[#22341c] font-medium">
-              Completa la ubicación y presiona{" "}
-              <span className="font-semibold">“Ver mapa”</span> para dibujar el
-              terreno.
-            </p>
-          </div>
-        )}
+      {cargandoMapa && (
+        <div className="rounded-xl border border-[#828d4b]/20 bg-[#828d4b]/5 px-4 py-3 text-sm text-[#817d58]">
+          Actualizando mapa según estado, municipio y colonia...
+        </div>
+      )}
 
-        {mapaVisible && mapCenter && (
-          <MapaComponent
-            mapCenter={mapCenter}
-            formData={formData}
-            setFormData={setFormData}
-          />
-        )}
+      <div className="space-y-6">
+        <MapaComponent
+          mapCenter={mapCenter}
+          formData={formData}
+          setFormData={setFormData}
+        />
       </div>
     </div>
   );

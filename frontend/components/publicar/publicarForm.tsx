@@ -12,7 +12,6 @@ import ImagenesTerreno from "./sections/imagenesTerreno";
 import Confirmacion from "./sections/confirmacion";
 
 export default function PublicarForm() {
-
   const [step, setStep] = useState(1);
 
   const [formData, setFormData] = useState({
@@ -22,49 +21,57 @@ export default function PublicarForm() {
     tipo: "",
     negociable: false,
 
+    codigo_postal: "",
     estado_region: "",
     municipio: "",
     colonia: "",
     direccion: "",
-    codigo_postal: "",
 
     topografia: "",
     forma: "",
     uso_suelo: "",
-
     tipo_propiedad: "",
 
     poligono: null,
     imagenes: [],
 
-    mapaVisible: false,
     mapCenter: null,
     tipoMapa: "osm",
+
+    latitud_manual: "",
+    longitud_manual: "",
   });
 
   const next = () => setStep(step + 1);
   const back = () => setStep(step - 1);
 
   return (
-
     <div className="max-w-5xl mx-auto bg-white rounded-xl shadow p-8">
-
       <ProgressBar step={step} />
 
-      {step === 1 && <InfoBasica formData={formData} setFormData={setFormData} />}
+      {step === 1 && (
+        <InfoBasica formData={formData} setFormData={setFormData} />
+      )}
 
-      {step === 2 && <UbicacionMapa formData={formData} setFormData={setFormData} />}
+      {step === 2 && (
+        <UbicacionMapa formData={formData} setFormData={setFormData} />
+      )}
 
-      {step === 3 && <CaracteristicasTerreno formData={formData} setFormData={setFormData} />}
+      {step === 3 && (
+        <CaracteristicasTerreno formData={formData} setFormData={setFormData} />
+      )}
 
-      {step === 4 && <InfoLegal formData={formData} setFormData={setFormData} />}
+      {step === 4 && (
+        <InfoLegal formData={formData} setFormData={setFormData} />
+      )}
 
-      {step === 5 && <ImagenesTerreno formData={formData} setFormData={setFormData} />}
+      {step === 5 && (
+        <ImagenesTerreno formData={formData} setFormData={setFormData} />
+      )}
 
       {step === 6 && <Confirmacion formData={formData} />}
 
       <div className="flex justify-between mt-10">
-
         {step > 1 && (
           <button
             onClick={back}
@@ -82,10 +89,7 @@ export default function PublicarForm() {
             Siguiente
           </button>
         )}
-
       </div>
-
     </div>
-
   );
 }

@@ -88,6 +88,7 @@ interface DrawControlProps {
   onPolygonChange: (data: any) => void;
   setCoordinates: React.Dispatch<React.SetStateAction<number[][] | null>>;
 }
+
 function FitPolygonBounds({ polygon }: { polygon: number[][] | null }) {
   const map = useMap();
 
@@ -101,26 +102,28 @@ function FitPolygonBounds({ polygon }: { polygon: number[][] | null }) {
   return null;
 }
 
-  function UpdateMapCenter({
-    centerCoordinates,
-  }: {
-    centerCoordinates?: [number, number] | null;
-  }) {
-    const map = useMap();
+function UpdateMapCenter({
+  centerCoordinates,
+  hasPolygon,
+}: {
+  centerCoordinates?: [number, number] | null;
+  hasPolygon: boolean;
+}) {
+  const map = useMap();
 
-    useEffect(() => {
-      if (!centerCoordinates) return;
+  useEffect(() => {
+    /* SI YA HAY POLÍGONO, EL AJUSTE LO CONTROLA FitPolygonBounds */
+    if (hasPolygon) return;
+    if (!centerCoordinates) return;
 
-      map.setView(centerCoordinates, 17, {
-        animate: true,
-        duration: 1.2,
-      });
-    }, [map, centerCoordinates]);
+    map.setView(centerCoordinates, 17, {
+      animate: true,
+      duration: 1.2,
+    });
+  }, [map, centerCoordinates, hasPolygon]);
 
-    return null;
-  }
-
-
+  return null;
+}
 
 function DrawControl({ onPolygonChange, setCoordinates }: DrawControlProps) {
   const map = useMap();
@@ -167,7 +170,12 @@ function DrawControl({ onPolygonChange, setCoordinates }: DrawControlProps) {
 
     if (latlngs && latlngs.length > 0) {
       const bounds = L.latLngBounds(latlngs as L.LatLngExpression[]);
-      map.fitBounds(bounds, { padding: [40, 40] });
+      map.fitBounds(bounds, {
+        padding: [40, 40],
+        animate: true,
+        duration: 5.2,
+        easeLinearity: 0.25
+    });
     }
   };
 
@@ -201,6 +209,14 @@ function DrawControl({ onPolygonChange, setCoordinates }: DrawControlProps) {
           marker: false,
           circlemarker: false,
           polyline: false,
+          polygon: {
+            allowIntersection: false,
+            showArea: true,
+            shapeOptions: {
+              color: "#06489a",
+              weight: 3,
+            },
+          },
         }}
       />
     </FeatureGroup>
@@ -216,6 +232,7 @@ export default function MapComponent({
   const [coordinates, setCoordinates] = useState<number[][] | null>(
     initialPolygon || null
   );
+
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
   const mapboxUrl = `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`;
 
@@ -229,16 +246,21 @@ export default function MapComponent({
       : null;
   }, [initialPolygon]);
 
+  const hasPolygon = Boolean(initialPolygon && initialPolygon.length > 0);
+
   return (
     <div className="w-full h-full">
       <MapContainer
         center={centerCoordinates || [23.6345, -102.5528]}
-        zoom={18}
-        maxZoom={20}
+        zoom={centerCoordinates ? 18 : 5}
+        maxZoom={22}
         className="w-full h-full rounded-lg z-0"
       >
         <ResizeMap />
-        <UpdateMapCenter centerCoordinates={centerCoordinates} />
+        <UpdateMapCenter
+          centerCoordinates={centerCoordinates}
+          hasPolygon={hasPolygon}
+        />
 
         {/* CAPA BASE DEL MAPA */}
         {tipoMapa === "esri" ? (
@@ -257,18 +279,19 @@ export default function MapComponent({
           />
         )}
 
+        {/* SI EXISTE POLÍGONO GUARDADO, AJUSTAR MAPA A SUS LÍMITES */}
         {polygonPositions && <FitPolygonBounds polygon={initialPolygon} />}
+
         {/* POLÍGONO GUARDADO */}
         {polygonPositions && (
           <Polygon
             positions={polygonPositions}
             pathOptions={{
-              color: "#06489a", /*----------------------------- COLOR DEL POLIGONO ----------------*/
+              color: "#06489a",
               weight: 3,
             }}
           />
         )}
-        
 
         {/* CAPA DE DIBUJO */}
         <DrawControl
