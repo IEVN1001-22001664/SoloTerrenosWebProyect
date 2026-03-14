@@ -167,9 +167,7 @@ exports.getById = async (req, res) => {
 // CREAR TERRENO
 // =================================
 exports.createTerreno = async (req, res) => {
-
   try {
-
     const {
       titulo,
       descripcion,
@@ -185,8 +183,12 @@ exports.createTerreno = async (req, res) => {
       forma,
       tipo_propiedad,
       uso_suelo,
-      negociable
+      negociable,
+      escritura,
+      estatus_legal,
+      gravamen
     } = req.body;
+
     const usuario_id = req.user.id;
 
     let { poligono } = req.body;
@@ -230,7 +232,7 @@ exports.createTerreno = async (req, res) => {
 
     const autoAprobado = userResult.rows[0]?.auto_aprobado;
 
-    const estadoFinal = autoAprobado ? "aprobado" : "pendiente";//-----------------------------------------------
+    const estadoFinal = autoAprobado ? "aprobado" : "pendiente";
 
     // =================================
     // INSERTAR TERRENO
@@ -261,10 +263,17 @@ exports.createTerreno = async (req, res) => {
         forma,
         tipo_propiedad,
         uso_suelo,
-        negociable
+        negociable,
+        escritura,
+        estatus_legal,
+        gravamen
       )
       VALUES
-      ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
+      (
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
+        $11,$12,$13,$14,$15,$16,$17,$18,$19,$20,
+        $21,$22,$23,$24,$25
+      )
       RETURNING *
       `,
       [
@@ -289,22 +298,22 @@ exports.createTerreno = async (req, res) => {
         forma,
         tipo_propiedad,
         uso_suelo,
-        negociable
+        negociable,
+        escritura || null,
+        estatus_legal || null,
+        gravamen ?? false
       ]
-      );
+    );
 
     res.status(201).json(result.rows[0]);
 
   } catch (error) {
-
     console.error("Error creando terreno:", error);
 
     res.status(500).json({
       message: "Error al crear terreno"
     });
-
   }
-
 };
 
 

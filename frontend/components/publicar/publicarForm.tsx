@@ -32,6 +32,12 @@ export default function PublicarForm() {
     uso_suelo: "",
     tipo_propiedad: "",
 
+    // info legal
+    escritura: "",
+    estatus_legal: "",
+    gravamen: false,
+    documentos: [],
+
     poligono: null,
     imagenes: [],
 

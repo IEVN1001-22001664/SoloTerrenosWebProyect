@@ -1,151 +1,76 @@
 "use client";
 
-import { useState } from "react";
+import PreviewImagenes from "./previewImagenes";
 
 interface Props {
-  terrenoId: number;
+  formData: any;
+  setFormData: (data: any) => void;
 }
 
-export default function ImageUploader({ terrenoId }: Props) {
-
-  const [imagenes, setImagenes] = useState<File[]>([]);
-  const [preview, setPreview] = useState<string[]>([]);
-  const [subiendo, setSubiendo] = useState(false);
-  const [progreso, setProgreso] = useState(0);
-
+export default function ImagenesTerreno({ formData, setFormData }: Props) {
   /* ============================= */
-  /* SELECCIONAR IMAGENES         */
+  /* SELECCIONAR IMÁGENES          */
   /* ============================= */
-
   const handleFiles = (files: FileList) => {
+    const archivos = Array.from(files);
 
-    const filesArray = Array.from(files);
-
-    setImagenes(prev => [...prev, ...filesArray]);
-
-    const previews = filesArray.map(file => URL.createObjectURL(file));
-
-    setPreview(prev => [...prev, ...previews]);
-
+    setFormData({
+      ...formData,
+      imagenes: [...(formData.imagenes || []), ...archivos],
+    });
   };
 
   /* ============================= */
-  /* DRAG AND DROP                */
+  /* DRAG AND DROP                 */
   /* ============================= */
-
-  const handleDrop = (e: React.DragEvent) => {
-
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
 
-    if (e.dataTransfer.files) {
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       handleFiles(e.dataTransfer.files);
     }
-
   };
 
   /* ============================= */
-  /* ELIMINAR IMAGEN              */
+  /* ELIMINAR IMAGEN               */
   /* ============================= */
-
   const eliminarImagen = (index: number) => {
-
-    const nuevasImagenes = [...imagenes];
-    const nuevasPreview = [...preview];
-
+    const nuevasImagenes = [...(formData.imagenes || [])];
     nuevasImagenes.splice(index, 1);
-    nuevasPreview.splice(index, 1);
 
-    setImagenes(nuevasImagenes);
-    setPreview(nuevasPreview);
-
-  };
-
-  /* ============================= */
-  /* SUBIR IMAGENES               */
-  /* ============================= */
-
-  const subirImagenes = async () => {
-
-    if (imagenes.length === 0) return;
-
-    setSubiendo(true);
-
-    const formData = new FormData();
-
-    imagenes.forEach((img) => {
-      formData.append("imagenes", img);
+    setFormData({
+      ...formData,
+      imagenes: nuevasImagenes,
     });
-
-    try {
-
-      const xhr = new XMLHttpRequest();
-
-      xhr.open(
-        "POST",
-        `http://localhost:5000/api/terrenos/${terrenoId}/imagenes`
-      );
-
-      xhr.withCredentials = true;
-
-      xhr.upload.onprogress = (event) => {
-
-        if (event.lengthComputable) {
-
-          const percent = Math.round(
-            (event.loaded * 100) / event.total
-          );
-
-          setProgreso(percent);
-
-        }
-
-      };
-
-      xhr.onload = () => {
-
-        setSubiendo(false);
-        setProgreso(100);
-
-        alert("Imágenes subidas correctamente");
-
-      };
-
-      xhr.onerror = () => {
-
-        setSubiendo(false);
-        alert("Error al subir imágenes");
-
-      };
-
-      xhr.send(formData);
-
-    } catch (error) {
-
-      console.error(error);
-      setSubiendo(false);
-
-    }
-
   };
 
   return (
-
     <div className="flex flex-col gap-6">
+      {/* TITULO */}
+      <div>
+        <h2 className="text-2xl font-semibold text-[#22341c]">
+          Imágenes del terreno
+        </h2>
 
-      {/* AREA DRAG */}
+        <p className="text-sm text-[#817d58]">
+          Agrega imágenes del terreno para mostrar su estado, ubicación y entorno.
+        </p>
+      </div>
 
-      <div
+      {/* ÁREA DE CARGA */}
+      <label
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
-        className="border-2 border-dashed border-[#817d58] rounded-xl p-8 text-center cursor-pointer hover:bg-[#828d4b]/10 transition"
+        className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#817d58]/35 bg-[#fafaf7] p-8 text-center transition hover:border-[#828d4b] hover:bg-[#f4f6ef]"
       >
+        <div className="mb-2 text-3xl">🖼️</div>
 
-        <p className="text-[#22341c] font-semibold">
+        <p className="text-base font-semibold text-[#22341c]">
           Arrastra imágenes aquí
         </p>
 
-        <p className="text-sm text-[#817d58]">
-          o selecciona archivos
+        <p className="mt-1 text-sm text-[#817d58]">
+          o haz clic para seleccionarlas desde tu dispositivo
         </p>
 
         <input
@@ -155,71 +80,26 @@ export default function ImageUploader({ terrenoId }: Props) {
           onChange={(e) =>
             e.target.files && handleFiles(e.target.files)
           }
-          className="mt-4"
+          className="hidden"
         />
+      </label>
 
-      </div>
+      {/* INFO */}
+      <p className="text-xs text-[#817d58]">
+        Las imágenes se guardarán temporalmente hasta llegar a la confirmación final.
+      </p>
 
       {/* PREVIEW */}
-
-      {preview.length > 0 && (
-
-        <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
-
-          {preview.map((src, index) => (
-
-            <div
-              key={index}
-              className="relative"
-            >
-
-              <img
-                src={src}
-                className="w-full h-32 object-cover rounded-lg"
-              />
-
-              <button
-                onClick={() => eliminarImagen(index)}
-                className="absolute top-1 right-1 bg-black/60 text-white text-xs px-2 py-1 rounded"
-              >
-                X
-              </button>
-
-            </div>
-
-          ))}
-
-        </div>
-
-      )}
-
-      {/* PROGRESO */}
-
-      {subiendo && (
-
-        <div className="w-full bg-gray-200 rounded-full h-3">
-
-          <div
-            className="bg-[#828d4b] h-3 rounded-full transition-all"
-            style={{ width: `${progreso}%` }}
-          />
-
-        </div>
-
-      )}
-
-      {/* BOTON SUBIR */}
-
-      <button
-        onClick={subirImagenes}
-        disabled={subiendo}
-        className="bg-[#22341c] text-white p-3 rounded-lg hover:bg-[#828d4b] transition"
-      >
-        Subir Imágenes
-      </button>
-
+      <PreviewImagenes
+        imagenes={formData.imagenes || []}
+        onEliminar={eliminarImagen}
+        onReordenar={(nuevasImagenes) =>
+          setFormData({
+            ...formData,
+            imagenes: nuevasImagenes,
+          })
+        }
+      />
     </div>
-
   );
-
 }

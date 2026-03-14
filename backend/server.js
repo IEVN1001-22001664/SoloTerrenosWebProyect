@@ -13,7 +13,6 @@ const cookieParser = require("cookie-parser");
 
 const pool = require("./db");
 
-
 // ======================================================
 // IMPORTACIÓN DE RUTAS DEL SISTEMA
 // ======================================================
@@ -22,6 +21,8 @@ const authRoutes = require("./routes/auth.routes");
 const terrenosRoutes = require("./routes/terrenos.routes");
 const adminRoutes = require("./routes/admin.routes");
 const sepomexRoutes = require("./routes/sepomex.routes");
+const imagenesRoutes = require("./routes/imagenes.routes");
+const documentosLegalesRoutes = require("./routes/documentosLegales.routes");
 
 // ======================================================
 // CREACIÓN DE LA APLICACIÓN EXPRESS
@@ -29,13 +30,11 @@ const sepomexRoutes = require("./routes/sepomex.routes");
 
 const app = express();
 
-
 // ======================================================
 // MIDDLEWARE PARA LEER JSON
 // ======================================================
 
 app.use(express.json());
-
 
 // ======================================================
 // CONFIGURACIÓN CORS
@@ -44,11 +43,10 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: "http://localhost:3000", // frontend Next.js
-    credentials: true, // permite cookies y sesiones
+    origin: "http://localhost:3000",
+    credentials: true,
   })
 );
-
 
 // ======================================================
 // COOKIE PARSER
@@ -57,13 +55,11 @@ app.use(
 
 app.use(cookieParser());
 
-
 // ======================================================
 // LOGGER DE PETICIONES (MUY ÚTIL PARA DEBUG)
 // ======================================================
 
 app.use((req, res, next) => {
-
   console.log(
     "Petición recibida en backend:",
     req.method,
@@ -71,9 +67,7 @@ app.use((req, res, next) => {
   );
 
   next();
-
 });
-
 
 // ======================================================
 // REGISTRO DE RUTAS DEL SISTEMA
@@ -91,6 +85,17 @@ app.use("/api/admin", adminRoutes);
 // sepomex
 app.use("/api/sepomex", sepomexRoutes);
 
+// imágenes
+app.use("/api", imagenesRoutes);
+
+// documentos legales
+app.use("/api", documentosLegalesRoutes);
+
+// ======================================================
+// ARCHIVOS ESTÁTICOS
+// ======================================================
+
+app.use("/uploads", express.static("uploads"));
 
 // ======================================================
 // RUTA PRINCIPAL DE PRUEBA
@@ -98,65 +103,33 @@ app.use("/api/sepomex", sepomexRoutes);
 // ======================================================
 
 app.get("/", async (req, res) => {
-
   try {
-
     const result = await pool.query("SELECT NOW()");
 
     res.json({
       message: "API funcionando",
       databaseTime: result.rows[0],
     });
-
   } catch (error) {
-
     res.status(500).json({
       error: error.message
     });
-
   }
-// ======================================================
-// CONFIGURACION DE IMAGENES
-// ======================================================
-
 });
-const imagenesRoutes = require("./routes/imagenes.routes");
 
-app.use("/api", imagenesRoutes);
-
-app.use("/uploads", express.static("uploads"));
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// ----------LINEAS DE CODIGO FINALES--------------------
 // ======================================================
 // PUERTO DEL SERVIDOR
 // ======================================================
 
 const PORT = process.env.PORT || 5000;
 
-
 // ======================================================
 // INICIO DEL SERVIDOR
 // ======================================================
 
 app.listen(PORT, () => {
-
   console.log("=================================");
   console.log(`Servidor corriendo en puerto ${PORT}`);
   console.log(`http://localhost:${PORT}`);
   console.log("=================================");
-
 });
