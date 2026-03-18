@@ -243,8 +243,8 @@ export default function MapaConfig({
                 Centro del terreno
               </p>
               <p className="break-words text-base font-semibold leading-snug text-[#22341c] md:text-lg">
-                {formData.poligono.center[0].toFixed(6)},{" "}
-                {formData.poligono.center[1].toFixed(6)}
+                {Number(formData.poligono.center[0]).toFixed(6)},{" "}
+                {Number(formData.poligono.center[1]).toFixed(6)}
               </p>
             </div>
           </div>

@@ -142,7 +142,7 @@ export default function Confirmacion({ formData }: Props) {
       /* REDIRECCIÓN                 */
       /* --------------------------- */
       alert("Terreno publicado correctamente");
-      router.push("/misTerrenos");
+      router.push("/colaborador/misTerrenos");
 
     } catch (error) {
       console.error(error);
@@ -151,6 +151,7 @@ export default function Confirmacion({ formData }: Props) {
     }
   };
 
+  console.log("POLIGONO EN CONFIRMACION:", formData.poligono);
   return (
     <div className="flex flex-col gap-8">
       {/* TITULO */}

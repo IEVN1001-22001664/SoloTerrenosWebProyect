@@ -1,6 +1,7 @@
 "use client";
 
 import PreviewImagenes from "./previewImagenes";
+import PreviewImagenesExistentes from "./previewImagenesExistentes";
 
 interface Props {
   formData: any;
@@ -9,7 +10,7 @@ interface Props {
 
 export default function ImagenesTerreno({ formData, setFormData }: Props) {
   /* ============================= */
-  /* SELECCIONAR IMÁGENES          */
+  /* SELECCIONAR IMÁGENES NUEVAS   */
   /* ============================= */
   const handleFiles = (files: FileList) => {
     const archivos = Array.from(files);
@@ -23,7 +24,7 @@ export default function ImagenesTerreno({ formData, setFormData }: Props) {
   /* ============================= */
   /* DRAG AND DROP                 */
   /* ============================= */
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
     e.preventDefault();
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
@@ -32,15 +33,41 @@ export default function ImagenesTerreno({ formData, setFormData }: Props) {
   };
 
   /* ============================= */
-  /* ELIMINAR IMAGEN               */
+  /* ELIMINAR IMAGEN NUEVA         */
   /* ============================= */
-  const eliminarImagen = (index: number) => {
+  const eliminarImagenNueva = (index: number) => {
     const nuevasImagenes = [...(formData.imagenes || [])];
     nuevasImagenes.splice(index, 1);
 
     setFormData({
       ...formData,
       imagenes: nuevasImagenes,
+    });
+  };
+
+  /* ============================= */
+  /* MARCAR IMAGEN EXISTENTE       */
+  /* PARA ELIMINAR                 */
+  /* ============================= */
+  const toggleEliminarImagenExistente = (imagenId: number) => {
+    const yaMarcada = (formData.imagenesEliminadas || []).includes(imagenId);
+
+    if (yaMarcada) {
+      setFormData({
+        ...formData,
+        imagenesEliminadas: (formData.imagenesEliminadas || []).filter(
+          (id: number) => id !== imagenId
+        ),
+      });
+      return;
+    }
+
+    setFormData({
+      ...formData,
+      imagenesEliminadas: [
+        ...(formData.imagenesEliminadas || []),
+        imagenId,
+      ],
     });
   };
 
@@ -57,6 +84,21 @@ export default function ImagenesTerreno({ formData, setFormData }: Props) {
         </p>
       </div>
 
+      {/* IMÁGENES EXISTENTES */}
+      {formData.imagenesExistentes && formData.imagenesExistentes.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <p className="font-medium text-[#22341c]">
+            Imágenes actuales
+          </p>
+
+          <PreviewImagenesExistentes
+            imagenes={formData.imagenesExistentes}
+            imagenesEliminadas={formData.imagenesEliminadas || []}
+            onToggleEliminar={toggleEliminarImagenExistente}
+          />
+        </div>
+      )}
+
       {/* ÁREA DE CARGA */}
       <label
         onDragOver={(e) => e.preventDefault()}
@@ -66,11 +108,11 @@ export default function ImagenesTerreno({ formData, setFormData }: Props) {
         <div className="mb-2 text-3xl">🖼️</div>
 
         <p className="text-base font-semibold text-[#22341c]">
-          Arrastra imágenes aquí
+          Agregar nuevas imágenes
         </p>
 
         <p className="mt-1 text-sm text-[#817d58]">
-          o haz clic para seleccionarlas desde tu dispositivo
+          Arrastra imágenes aquí o haz clic para seleccionarlas
         </p>
 
         <input
@@ -84,15 +126,14 @@ export default function ImagenesTerreno({ formData, setFormData }: Props) {
         />
       </label>
 
-      {/* INFO */}
       <p className="text-xs text-[#817d58]">
-        Las imágenes se guardarán temporalmente hasta llegar a la confirmación final.
+        Las imágenes nuevas se guardarán al confirmar los cambios.
       </p>
 
-      {/* PREVIEW */}
+      {/* PREVIEW NUEVAS */}
       <PreviewImagenes
         imagenes={formData.imagenes || []}
-        onEliminar={eliminarImagen}
+        onEliminar={eliminarImagenNueva}
         onReordenar={(nuevasImagenes) =>
           setFormData({
             ...formData,

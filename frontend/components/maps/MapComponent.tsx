@@ -1,13 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   MapContainer,
   TileLayer,
   FeatureGroup,
   useMap,
-  Polygon,
 } from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
 import L from "leaflet";
@@ -87,6 +86,7 @@ interface Props {
 interface DrawControlProps {
   onPolygonChange: (data: any) => void;
   setCoordinates: React.Dispatch<React.SetStateAction<number[][] | null>>;
+  initialPolygon?: number[][] | null;
 }
 
 function FitPolygonBounds({ polygon }: { polygon: number[][] | null }) {
@@ -112,7 +112,6 @@ function UpdateMapCenter({
   const map = useMap();
 
   useEffect(() => {
-    /* SI YA HAY POLÍGONO, EL AJUSTE LO CONTROLA FitPolygonBounds */
     if (hasPolygon) return;
     if (!centerCoordinates) return;
 
@@ -125,8 +124,13 @@ function UpdateMapCenter({
   return null;
 }
 
-function DrawControl({ onPolygonChange, setCoordinates }: DrawControlProps) {
+function DrawControl({
+  onPolygonChange,
+  setCoordinates,
+  initialPolygon,
+}: DrawControlProps) {
   const map = useMap();
+  const featureGroupRef = useRef<L.FeatureGroup | null>(null);
 
   /* ===================================== */
   /* EXTRAER Y CALCULAR DATOS DEL POLÍGONO */
@@ -163,9 +167,47 @@ function DrawControl({ onPolygonChange, setCoordinates }: DrawControlProps) {
   };
 
   /* ===================================== */
+  /* CARGAR POLÍGONO INICIAL EN EL GRUPO   */
+  /* ===================================== */
+  useEffect(() => {
+    if (!featureGroupRef.current) return;
+
+    const featureGroup = featureGroupRef.current;
+
+    featureGroup.clearLayers();
+
+    if (initialPolygon && initialPolygon.length > 0) {
+      const polygonLayer = L.polygon(
+        initialPolygon as L.LatLngExpression[],
+        {
+          color: "#06489a",
+          weight: 3,
+        }
+      );
+
+      featureGroup.addLayer(polygonLayer);
+      setCoordinates(initialPolygon);
+
+      const bounds = L.latLngBounds(initialPolygon as L.LatLngExpression[]);
+      map.fitBounds(bounds, {
+        padding: [40, 40],
+        animate: true,
+        duration: 1.2,
+      });
+    }
+  }, [initialPolygon, map, setCoordinates]);
+
+  /* ===================================== */
   /* CREAR POLÍGONO                        */
   /* ===================================== */
   const onCreated = (e: any) => {
+    const featureGroup = featureGroupRef.current;
+
+    if (featureGroup) {
+      featureGroup.clearLayers();
+      featureGroup.addLayer(e.layer);
+    }
+
     const latlngs = procesarPoligono(e.layer);
 
     if (latlngs && latlngs.length > 0) {
@@ -174,8 +216,8 @@ function DrawControl({ onPolygonChange, setCoordinates }: DrawControlProps) {
         padding: [40, 40],
         animate: true,
         duration: 5.2,
-        easeLinearity: 0.25
-    });
+        easeLinearity: 0.25,
+      });
     }
   };
 
@@ -197,7 +239,13 @@ function DrawControl({ onPolygonChange, setCoordinates }: DrawControlProps) {
   };
 
   return (
-    <FeatureGroup>
+    <FeatureGroup
+      ref={(ref) => {
+        if (ref) {
+          featureGroupRef.current = ref;
+        }
+      }}
+    >
       <EditControl
         position="topright"
         onCreated={onCreated}
@@ -240,12 +288,6 @@ export default function MapComponent({
     setCoordinates(initialPolygon || null);
   }, [initialPolygon]);
 
-  const polygonPositions = useMemo(() => {
-    return initialPolygon
-      ? (initialPolygon as [number, number][])
-      : null;
-  }, [initialPolygon]);
-
   const hasPolygon = Boolean(initialPolygon && initialPolygon.length > 0);
 
   return (
@@ -280,23 +322,13 @@ export default function MapComponent({
         )}
 
         {/* SI EXISTE POLÍGONO GUARDADO, AJUSTAR MAPA A SUS LÍMITES */}
-        {polygonPositions && <FitPolygonBounds polygon={initialPolygon} />}
+        {initialPolygon && <FitPolygonBounds polygon={initialPolygon} />}
 
-        {/* POLÍGONO GUARDADO */}
-        {polygonPositions && (
-          <Polygon
-            positions={polygonPositions}
-            pathOptions={{
-              color: "#06489a",
-              weight: 3,
-            }}
-          />
-        )}
-
-        {/* CAPA DE DIBUJO */}
+        {/* CAPA DE DIBUJO + POLÍGONO EDITABLE */}
         <DrawControl
           onPolygonChange={onPolygonChange}
           setCoordinates={setCoordinates}
+          initialPolygon={initialPolygon}
         />
       </MapContainer>
 

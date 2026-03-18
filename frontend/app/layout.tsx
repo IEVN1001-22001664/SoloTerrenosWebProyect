@@ -13,13 +13,23 @@ export default function RootLayout({
   const pathname = usePathname();
 
   const isAdminRoute = pathname.startsWith("/admin");
+  const isLandingPage = pathname === "/";
 
   return (
     <html lang="es">
       <body>
         <AuthProvider>
           {!isAdminRoute && <Navbar />}
-          {children}
+
+          <main
+            className={
+              !isAdminRoute && !isLandingPage
+                ? "pt-20 md:pt-18"
+                : ""
+            }
+          >
+            {children}
+          </main>
         </AuthProvider>
       </body>
     </html>

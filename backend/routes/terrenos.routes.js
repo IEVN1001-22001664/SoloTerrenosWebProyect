@@ -21,6 +21,16 @@ router.get("/publicos", terrenosController.getPublicos);
 // Obtener todos los terrenos aprobados
 router.get("/", terrenosController.getAllPublic);
 
+// ======================================================
+// Obtener terrenos del colaborador autenticado
+// ======================================================
+router.get(
+  "/mis-terrenos",
+  authMiddleware,
+  roleMiddleware("colaborador", "admin"),
+  terrenosController.getMisTerrenos
+);
+
 
 // ======================================================
 // RUTAS ADMIN
@@ -60,6 +70,28 @@ router.put(
 
 
 // ======================================================
+// PAUSAR TERRENO
+// ======================================================
+
+router.patch(
+  "/:id/pausar",
+  authMiddleware,
+  roleMiddleware("colaborador", "admin"),
+  terrenosController.pausarTerreno
+);
+
+// ======================================================
+// REACTIVAR TERRENO
+// ======================================================
+
+router.patch(
+  "/:id/reactivar",
+  authMiddleware,
+  roleMiddleware("colaborador", "admin"),
+  terrenosController.reactivarTerreno
+);
+
+// ======================================================
 // ELIMINAR TERRENO
 // ======================================================
 
@@ -72,10 +104,27 @@ router.delete(
 
 
 // ======================================================
+// OBTENER TERRENO PARA EDICIÓN
+// ======================================================
+
+router.get(
+  "/:id/editar",
+  authMiddleware,
+  roleMiddleware("colaborador", "admin"),
+  terrenosController.getByIdForEdit
+);
+
+// ======================================================
 // OBTENER TERRENO POR ID (SIEMPRE AL FINAL)
 // ======================================================
 
 router.get("/:id", terrenosController.getById);
+
+
+
+
+
+
 
 
 // ======================================================

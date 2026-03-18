@@ -121,7 +121,7 @@ export default function Navbar() {
 
           {user?.rol === "colaborador" && (
             <>
-              <Link href="/colaborador">Mis terrenos</Link>
+              <Link href="/colaborador/misTerrenos">Mis terrenos</Link>
               <Link href="/propuestas">Propuestas</Link>
               <Link href="/herramientas">Herramientas</Link>
             </>
@@ -261,7 +261,7 @@ export default function Navbar() {
 
             {user?.rol === "colaborador" && (
               <>
-                <Link href="/colaborador">Mis terrenos</Link>
+                <Link href="/colaborador/misTerrenos">Mis terrenos</Link>
                 <Link href="/propuestas">Propuestas</Link>
                 <Link href="/herramientas">Herramientas</Link>
                 <Link href="/publicar">Publicar</Link>
