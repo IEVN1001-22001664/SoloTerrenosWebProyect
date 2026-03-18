@@ -49,10 +49,23 @@ export default function MisTerrenosPage() {
     obtenerMisTerrenos();
   }, []);
 
+  const actualizarEstadoTerreno = (id: number, nuevoEstado: string) => {
+    setTerrenos((prev) =>
+      prev.map((terreno) =>
+        terreno.id === id
+          ? { ...terreno, estado: nuevoEstado }
+          : terreno
+      )
+    );
+  };
+
+  const eliminarTerrenoDeLista = (id: number) => {
+    setTerrenos((prev) => prev.filter((terreno) => terreno.id !== id));
+  };
+
   const terrenosFiltrados = useMemo(() => {
     let resultado = [...terrenos];
 
-    // BUSQUEDA
     if (busqueda.trim()) {
       const texto = busqueda.toLowerCase().trim();
 
@@ -71,14 +84,12 @@ export default function MisTerrenosPage() {
       });
     }
 
-    // FILTRO ESTADO
     if (filtroEstado !== "todos") {
       resultado = resultado.filter(
         (terreno) => (terreno.estado || "").toLowerCase() === filtroEstado
       );
     }
 
-    // ORDEN
     resultado.sort((a, b) => {
       switch (orden) {
         case "antiguos":
@@ -127,6 +138,14 @@ export default function MisTerrenosPage() {
     [terrenos]
   );
 
+  const totalPausados = useMemo(
+    () =>
+      terrenos.filter(
+        (t) => (t.estado || "").toLowerCase() === "pausado"
+      ).length,
+    [terrenos]
+  );
+
   return (
     <main className="min-h-screen bg-[#f8f8f5] px-6 py-10">
       <div className="mx-auto max-w-7xl">
@@ -151,7 +170,7 @@ export default function MisTerrenosPage() {
         </div>
 
         {/* RESUMEN RÁPIDO */}
-        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-4">
           <div className="rounded-2xl border border-[#817d58]/20 bg-white p-5 shadow-sm">
             <p className="text-sm text-[#817d58]">Total de terrenos</p>
             <p className="mt-2 text-2xl font-bold text-[#22341c]">
@@ -170,6 +189,13 @@ export default function MisTerrenosPage() {
             <p className="text-sm text-[#817d58]">Pendientes</p>
             <p className="mt-2 text-2xl font-bold text-[#22341c]">
               {totalPendientes}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-[#817d58]/20 bg-white p-5 shadow-sm">
+            <p className="text-sm text-[#817d58]">Pausados</p>
+            <p className="mt-2 text-2xl font-bold text-[#22341c]">
+              {totalPausados}
             </p>
           </div>
         </div>
@@ -205,7 +231,11 @@ export default function MisTerrenosPage() {
               Mostrando {terrenosFiltrados.length} de {terrenos.length} terrenos
             </div>
 
-            <MisTerrenosLista terrenos={terrenosFiltrados} />
+            <MisTerrenosLista
+              terrenos={terrenosFiltrados}
+              onEstadoChange={actualizarEstadoTerreno}
+              onDelete={eliminarTerrenoDeLista}
+            />
           </>
         )}
       </div>

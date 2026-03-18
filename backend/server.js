@@ -7,6 +7,13 @@ const cors = require("cors");
 require("dotenv").config();
 const cookieParser = require("cookie-parser");
 
+
+console.log('--- DEBUG DE VARIABLES EN LA MAC ---');
+console.log('Host:', process.env.DB_HOST);
+console.log('User:', process.env.DB_USER);
+console.log('Password exists:', !!process.env.DB_PASSWORD); // Esto solo dice si hay algo, no el texto
+console.log('Port:', process.env.DB_PORT);
+console.log('------------------------------------');
 // ======================================================
 // IMPORTACIÓN DE BASE DE DATOS
 // ======================================================
