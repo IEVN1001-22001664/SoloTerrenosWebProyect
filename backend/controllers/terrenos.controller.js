@@ -22,17 +22,39 @@ function getCenter(poligono) {
   };
 }
 
-function getPerimeter(poligono) {
+function projectToMeters(poligono) {
+  if (!Array.isArray(poligono) || poligono.length === 0) return [];
 
+  // Punto de referencia para proyección local
+  const lat0 =
+    poligono.reduce((acc, [lat]) => acc + Number(lat), 0) / poligono.length;
+
+  const lng0 =
+    poligono.reduce((acc, [, lng]) => acc + Number(lng), 0) / poligono.length;
+
+  const latFactor = 110540; // metros por grado de latitud
+  const lngFactor = 111320 * Math.cos((lat0 * Math.PI) / 180); // metros por grado de longitud ajustado por latitud
+
+  return poligono.map(([lat, lng]) => {
+    const y = (Number(lat) - lat0) * latFactor;
+    const x = (Number(lng) - lng0) * lngFactor;
+
+    return [x, y];
+  });
+}
+
+function getPerimeter(poligono) {
+  if (!Array.isArray(poligono) || poligono.length < 2) return 0;
+
+  const points = projectToMeters(poligono);
   let perimetro = 0;
 
-  for (let i = 0; i < poligono.length; i++) {
+  for (let i = 0; i < points.length; i++) {
+    const [x1, y1] = points[i];
+    const [x2, y2] = points[(i + 1) % points.length];
 
-    const p1 = poligono[i];
-    const p2 = poligono[(i + 1) % poligono.length];
-
-    const dx = (p2[1] - p1[1]) * 111320;
-    const dy = (p2[0] - p1[0]) * 110540;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
 
     perimetro += Math.sqrt(dx * dx + dy * dy);
   }
@@ -41,19 +63,19 @@ function getPerimeter(poligono) {
 }
 
 function getArea(poligono) {
+  if (!Array.isArray(poligono) || poligono.length < 3) return 0;
 
+  const points = projectToMeters(poligono);
   let area = 0;
 
-  for (let i = 0; i < poligono.length; i++) {
+  for (let i = 0; i < points.length; i++) {
+    const [x1, y1] = points[i];
+    const [x2, y2] = points[(i + 1) % points.length];
 
-    const j = (i + 1) % poligono.length;
-
-    area +=
-      poligono[i][1] * poligono[j][0] -
-      poligono[j][1] * poligono[i][0];
+    area += x1 * y2 - x2 * y1;
   }
 
-  return Math.abs(area / 2) * 12365;
+  return Math.abs(area / 2); // m²
 }
 
 
@@ -90,22 +112,27 @@ exports.getPublicos = async (req, res) => {
 // =============================
 
 exports.getAllPublic = async (req, res) => {
-
   try {
-
-    const result = await pool.query(
-      "SELECT * FROM terrenos WHERE estado = 'aprobado' ORDER BY id DESC"
-    );
+    const result = await pool.query(`
+      SELECT
+        t.*,
+        (
+          SELECT ti.url
+          FROM terreno_imagenes ti
+          WHERE ti.terreno_id = t.id
+          ORDER BY ti.id ASC
+          LIMIT 1
+        ) AS imagen_principal
+      FROM terrenos t
+      WHERE t.estado = 'aprobado'
+      ORDER BY t.id DESC
+    `);
 
     res.json(result.rows);
-
   } catch (error) {
-
     console.error(error);
     res.status(500).json({ message: "Error al obtener terrenos" });
-
   }
-
 };
 
 

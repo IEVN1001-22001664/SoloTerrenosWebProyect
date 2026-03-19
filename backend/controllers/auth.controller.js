@@ -123,6 +123,8 @@ const login = async (req, res) => {
         id: user.id,
         rol: user.rol,
         nombre: user.nombre,
+        apellido: user.apellido,
+        email: user.email,
       },
     });
 
@@ -132,18 +134,40 @@ const login = async (req, res) => {
   }
 };
 
-const me = (req, res) => {
-  if (!req.user) {
-    return res.status(401).json({ message: "No autenticado" });
-  }
+const me = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
 
-  res.json({
-    user: {
-      id: req.user.id,
-      rol: req.user.rol,
-      nombre: req.user.nombre,
-    },
-  });
+    const result = await pool.query(
+      `
+      SELECT id, rol, nombre, apellido, email, telefono
+      FROM usuarios
+      WHERE id = $1
+      `,
+      [req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    const user = result.rows[0];
+
+    res.json({
+      user: {
+        id: user.id,
+        rol: user.rol,
+        nombre: user.nombre,
+        apellido: user.apellido,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    console.error("Error en /me:", error);
+    res.status(500).json({ message: "Error del servidor" });
+  }
 };
 
 module.exports = {login, register, me};

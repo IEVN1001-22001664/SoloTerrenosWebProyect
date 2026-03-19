@@ -1,11 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { login } = useAuth();
+
+  const redirect = searchParams.get("redirect");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,12 +46,17 @@ export default function LoginPage() {
         return;
       }
 
+      login(data.user);
+
       const rol = data.user.rol;
 
-      // Pequeño delay para que la animación se perciba suave
       setTimeout(() => {
         if (rol === "usuario") {
-          router.push("/");
+          if (redirect) {
+            router.push(redirect);
+          } else {
+            router.push("/");
+          }
         } else if (rol === "colaborador") {
           router.push("/colaborador");
         } else if (rol === "admin") {
@@ -55,7 +65,6 @@ export default function LoginPage() {
           router.push("/");
         }
       }, 600);
-
     } catch (error) {
       setError("Error del servidor");
       setLoading(false);
@@ -64,29 +73,21 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#22341c] flex items-center justify-center px-4 relative overflow-hidden">
-
-      {/* FULL SCREEN LOADING OVERLAY */}
       {loading && (
         <div className="fixed inset-0 bg-[#22341c] z-50 flex items-center justify-center transition-opacity duration-500">
           <div className="flex flex-col items-center gap-6 animate-fadeIn">
-            
             <div className="w-14 h-14 border-4 border-[#9f885c] border-t-transparent rounded-full animate-spin"></div>
-            
             <p className="text-white text-lg tracking-wide animate-pulse">
               Iniciando sesión...
             </p>
-
           </div>
         </div>
       )}
 
-      {/* Animated Glow */}
       <div className="absolute w-96 h-96 bg-[#9f885c] opacity-20 rounded-full blur-3xl animate-pulse top-10 left-10"></div>
       <div className="absolute w-96 h-96 bg-[#828d4b] opacity-20 rounded-full blur-3xl animate-pulse bottom-10 right-10"></div>
 
-      {/* Card */}
       <div className="w-full max-w-md bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 md:p-10 text-white border border-white/20 animate-fadeIn">
-
         <h1 className="text-3xl font-bold mb-2 text-center tracking-wide">
           Bienvenido
         </h1>
@@ -96,8 +97,6 @@ export default function LoginPage() {
         </p>
 
         <form onSubmit={handleLogin} className="flex flex-col gap-5">
-
-          {/* Email */}
           <input
             type="email"
             placeholder="Correo electrónico"
@@ -107,7 +106,6 @@ export default function LoginPage() {
             required
           />
 
-          {/* Password */}
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
@@ -126,14 +124,12 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* Error */}
           {error && (
             <p className="text-red-400 text-sm text-center animate-pulse">
               {error}
             </p>
           )}
 
-          {/* Remember Me */}
           <div className="flex items-center gap-2 text-sm text-gray-300">
             <input
               type="checkbox"
@@ -144,7 +140,6 @@ export default function LoginPage() {
             <label>Recordarme</label>
           </div>
 
-          {/* Login Button */}
           <button
             type="submit"
             disabled={loading}
@@ -154,17 +149,21 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Register Link */}
         <div className="mt-6 text-center text-sm text-gray-300">
           ¿No tienes cuenta?{" "}
           <button
-            onClick={() => router.push("/register")}
+            onClick={() =>
+              router.push(
+                redirect
+                  ? `/register?redirect=${encodeURIComponent(redirect)}`
+                  : "/register"
+              )
+            }
             className="text-[#9f885c] hover:underline font-semibold"
           >
             Regístrate aquí
           </button>
         </div>
-
       </div>
     </div>
   );

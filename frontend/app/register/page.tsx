@@ -1,11 +1,13 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 
 
 export default function Register() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect");
 
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
@@ -105,7 +107,11 @@ const strength = calculateStrength();
       }
 
       alert("Usuario registrado correctamente");
-      router.push("/login");
+      router.push(
+        redirect
+          ? `/login?redirect=${encodeURIComponent(redirect)}`
+          : "/login"
+      );
 
     } catch (error) {
       console.error(error);

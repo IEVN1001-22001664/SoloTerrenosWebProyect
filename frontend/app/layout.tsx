@@ -25,7 +25,7 @@ export default function RootLayout({
           <main
             className={
               !isAdminRoute && !isLandingPage
-                ? "pt-20 md:pt-18"
+                ? "pt-28 md:pt-16"
                 : ""
             }
           >

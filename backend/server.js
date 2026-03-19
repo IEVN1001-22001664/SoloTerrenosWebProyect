@@ -7,13 +7,13 @@ const cors = require("cors");
 require("dotenv").config();
 const cookieParser = require("cookie-parser");
 
+console.log("--- DEBUG DE VARIABLES EN LA MAC ---");
+console.log("Host:", process.env.DB_HOST);
+console.log("User:", process.env.DB_USER);
+console.log("Password exists:", !!process.env.DB_PASSWORD);
+console.log("Port:", process.env.DB_PORT);
+console.log("------------------------------------");
 
-console.log('--- DEBUG DE VARIABLES EN LA MAC ---');
-console.log('Host:', process.env.DB_HOST);
-console.log('User:', process.env.DB_USER);
-console.log('Password exists:', !!process.env.DB_PASSWORD); // Esto solo dice si hay algo, no el texto
-console.log('Port:', process.env.DB_PORT);
-console.log('------------------------------------');
 // ======================================================
 // IMPORTACIÓN DE BASE DE DATOS
 // ======================================================
@@ -30,6 +30,7 @@ const adminRoutes = require("./routes/admin.routes");
 const sepomexRoutes = require("./routes/sepomex.routes");
 const imagenesRoutes = require("./routes/imagenes.routes");
 const documentosLegalesRoutes = require("./routes/documentosLegales.routes");
+const leadsRoutes = require("./routes/leads.routes");
 
 // ======================================================
 // CREACIÓN DE LA APLICACIÓN EXPRESS
@@ -45,7 +46,6 @@ app.use(express.json());
 
 // ======================================================
 // CONFIGURACIÓN CORS
-// Permite que el frontend (Next.js) acceda al backend
 // ======================================================
 
 app.use(
@@ -57,22 +57,16 @@ app.use(
 
 // ======================================================
 // COOKIE PARSER
-// Permite leer cookies del navegador
 // ======================================================
 
 app.use(cookieParser());
 
 // ======================================================
-// LOGGER DE PETICIONES (MUY ÚTIL PARA DEBUG)
+// LOGGER DE PETICIONES
 // ======================================================
 
 app.use((req, res, next) => {
-  console.log(
-    "Petición recibida en backend:",
-    req.method,
-    req.url
-  );
-
+  console.log("Petición recibida en backend:", req.method, req.url);
   next();
 });
 
@@ -98,6 +92,9 @@ app.use("/api", imagenesRoutes);
 // documentos legales
 app.use("/api", documentosLegalesRoutes);
 
+// leads
+app.use("/api/leads", leadsRoutes);
+
 // ======================================================
 // ARCHIVOS ESTÁTICOS
 // ======================================================
@@ -106,7 +103,6 @@ app.use("/uploads", express.static("uploads"));
 
 // ======================================================
 // RUTA PRINCIPAL DE PRUEBA
-// Sirve para comprobar que el backend funciona
 // ======================================================
 
 app.get("/", async (req, res) => {
@@ -119,7 +115,7 @@ app.get("/", async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({
-      error: error.message
+      error: error.message,
     });
   }
 });

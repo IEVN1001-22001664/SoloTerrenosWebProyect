@@ -6,6 +6,9 @@ interface User {
   id: number;
   rol: string;
   nombre: string;
+  apellido?: string;
+  email?: string;
+  telefono?: string;
 }
 
 interface AuthContextType {
@@ -21,7 +24,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔥 Verificar sesión al cargar app
   useEffect(() => {
     const checkAuth = async () => {
       try {
