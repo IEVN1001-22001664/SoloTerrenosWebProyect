@@ -136,19 +136,142 @@ exports.getPublicaciones = async (req, res) => {
 };
 
 exports.cambiarEstadoPublicacion = async (req, res) => {
-  const { id } = req.params;
-  const { estado } = req.body;
+  const client = await pool.connect();
 
   try {
-    await pool.query(
-      "UPDATE terrenos SET estado = $1 WHERE id = $2",
+    const { id } = req.params;
+    const { estado, mensaje } = req.body;
+    const admin_id = req.user.id;
+
+    const estadosPermitidos = ["pendiente", "aprobado", "rechazado", "pausado", "eliminado"];
+
+    if (!estado || !estadosPermitidos.includes(estado)) {
+      return res.status(400).json({
+        message: "Estado inválido",
+      });
+    }
+
+    // Si rechaza, el mensaje debe ser obligatorio
+    if (estado === "rechazado" && (!mensaje || !mensaje.trim())) {
+      return res.status(400).json({
+        message: "Debes proporcionar un mensaje de observación al rechazar una publicación",
+      });
+    }
+
+    await client.query("BEGIN");
+
+    // 1. Obtener terreno y colaborador dueño
+    const terrenoResult = await client.query(
+      `
+      SELECT t.id, t.titulo, t.estado, t.usuario_id, u.nombre
+      FROM terrenos t
+      INNER JOIN usuarios u ON u.id = t.usuario_id
+      WHERE t.id = $1
+      `,
+      [id]
+    );
+
+    if (terrenoResult.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({
+        message: "Publicación no encontrada",
+      });
+    }
+
+    const terreno = terrenoResult.rows[0];
+    const colaborador_id = terreno.usuario_id;
+
+    // 2. Actualizar estado del terreno
+    const updateResult = await client.query(
+      `
+      UPDATE terrenos
+      SET estado = $1
+      WHERE id = $2
+      RETURNING *
+      `,
       [estado, id]
     );
 
-    res.json({ message: "Estado actualizado correctamente" });
+    // 3. Guardar revisión administrativa
+    await client.query(
+      `
+      INSERT INTO revisiones_terrenos
+      (
+        terreno_id,
+        admin_id,
+        estado_revision,
+        mensaje
+      )
+      VALUES ($1, $2, $3, $4)
+      `,
+      [
+        id,
+        admin_id,
+        estado,
+        mensaje?.trim() || null,
+      ]
+    );
+
+    // 4. Crear notificación al colaborador
+    let tituloNotificacion = "Actualización de tu publicación";
+    let mensajeNotificacion = `El estado de tu terreno "${terreno.titulo}" fue actualizado a "${estado}".`;
+
+    if (estado === "aprobado") {
+      tituloNotificacion = "Publicación aprobada";
+      mensajeNotificacion =
+        mensaje?.trim() ||
+        `Tu terreno "${terreno.titulo}" fue aprobado y ya puede mostrarse públicamente.`;
+    }
+
+    if (estado === "rechazado") {
+      tituloNotificacion = "Publicación rechazada";
+      mensajeNotificacion =
+        mensaje?.trim() ||
+        `Tu terreno "${terreno.titulo}" fue rechazado. Revisa la observación del administrador y vuelve a postularlo.`;
+    }
+
+    await client.query(
+      `
+      INSERT INTO notificaciones
+      (
+        usuario_id,
+        tipo,
+        titulo,
+        mensaje,
+        referencia_id,
+        referencia_tipo,
+        metadata
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `,
+      [
+        colaborador_id,
+        "revision_publicacion",
+        tituloNotificacion,
+        mensajeNotificacion,
+        Number(id),
+        "terreno",
+        JSON.stringify({
+          terreno_id: Number(id),
+          estado,
+        }),
+      ]
+    );
+
+    await client.query("COMMIT");
+
+    res.json({
+      message: "Estado actualizado correctamente",
+      terreno: updateResult.rows[0],
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error actualizando estado" });
+    await client.query("ROLLBACK");
+    console.error("Error actualizando estado:", error);
+    res.status(500).json({
+      message: "Error actualizando estado",
+    });
+  } finally {
+    client.release();
   }
 };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 import { toast } from "sonner";
 
 interface Props {
@@ -20,9 +21,9 @@ export default function ContactarVendedorModal({
   emailInicial = "",
   telefonoInicial = "",
 }: Props) {
-  const [nombre, setNombre] = useState(nombreInicial);
-  const [email, setEmail] = useState(emailInicial);
-  const [telefono, setTelefono] = useState(telefonoInicial);
+  const [nombre, setNombre] = useState("");
+  const [email, setEmail] = useState("");
+  const [telefono, setTelefono] = useState("");
   const [mensaje, setMensaje] = useState(
     "Hola, me interesa este terreno. ¿Podrían brindarme más información?"
   );
@@ -60,88 +61,88 @@ export default function ContactarVendedorModal({
     onClose();
   };
 
-const enviarLead = async () => {
-  if (!nombre.trim() || !email.trim() || !telefono.trim()) {
-    toast.error("Completa los campos obligatorios.", {
-      description: "Nombre, correo y teléfono son necesarios para enviar tu solicitud.",
-    });
-    return;
-  }
-
-  try {
-    setEnviando(true);
-
-    const response = await fetch("http://localhost:5000/api/leads", {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        terreno_id: terrenoId,
-        nombre_contacto: nombre.trim(),
-        email_contacto: email.trim(),
-        telefono_contacto: telefono.trim(),
-        mensaje: mensaje.trim(),
-      }),
-    });
-
-    const rawText = await response.text();
-    console.log("STATUS LEAD:", response.status);
-    console.log("RESPUESTA RAW LEAD:", rawText);
-
-    let data: any = {};
-    try {
-      data = rawText ? JSON.parse(rawText) : {};
-    } catch (e) {
-      console.error("La respuesta no es JSON válido");
-    }
-
-    if (!response.ok) {
-      toast.error("No se pudo enviar tu solicitud.", {
-        description: data.message || "Inténtalo nuevamente en unos momentos.",
+  const enviarLead = async () => {
+    if (!nombre.trim() || !email.trim()) {
+      toast.error("Completa los campos obligatorios.", {
+        description: "Nombre y correo son necesarios para enviar tu solicitud.",
       });
       return;
     }
 
-    toast.success("Solicitud enviada correctamente.", {
-      description: "El vendedor recibió tu interés y podrá ponerse en contacto contigo.",
-    });
+    try {
+      setEnviando(true);
 
-    onClose();
-  } catch (error) {
-    console.error("Error enviando lead:", error);
-    toast.error("Ocurrió un error al enviar tu solicitud.", {
-      description: "Verifica tu conexión e inténtalo nuevamente.",
-    });
-  } finally {
-    setEnviando(false);
-  }
-};
+      const response = await fetch("http://localhost:5000/api/leads", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          terreno_id: terrenoId,
+          nombre_contacto: nombre.trim(),
+          email_contacto: email.trim(),
+          telefono_contacto: telefono.trim(),
+          mensaje: mensaje.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error("No se pudo enviar tu solicitud.", {
+          description: data.message || "Inténtalo nuevamente en unos momentos.",
+        });
+        return;
+      }
+
+      toast.success("Solicitud enviada correctamente.", {
+        description: "El vendedor recibió tu interés y podrá ponerse en contacto contigo.",
+      });
+
+      onClose();
+    } catch (error) {
+      console.error("Error enviando lead:", error);
+      toast.error("Ocurrió un error al enviar tu solicitud.", {
+        description: "Verifica tu conexión e inténtalo nuevamente.",
+      });
+    } finally {
+      setEnviando(false);
+    }
+  };
 
   if (!open) return null;
-console.log("DATOS INICIALES MODAL:", {
-  nombreInicial,
-  emailInicial,
-  telefonoInicial,
-});//--------------------------------------------------------------
+
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-      <button
-        type="button"
-        aria-label="Cerrar modal"
-        onClick={cerrar}
+      <div
         className="absolute inset-0 bg-black/45 backdrop-blur-[2px]"
+        onClick={cerrar}
       />
 
-      <div className="relative z-[121] w-full max-w-xl overflow-hidden rounded-[2rem] border border-[#817d58]/20 bg-white shadow-2xl">
-        <div className="border-b border-[#817d58]/12 px-6 py-5 md:px-8">
-          <h3 className="text-2xl font-semibold text-[#22341c]">
-            Contactar vendedor
-          </h3>
-          <p className="mt-1 text-sm text-[#817d58]">
-            Comparte tus datos para solicitar información sobre este terreno.
-          </p>
+      <div
+        className="relative z-[121] w-full max-w-xl overflow-hidden rounded-[2rem] border border-[#817d58]/20 bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between border-b border-[#817d58]/12 px-6 py-5 md:px-8">
+          <div>
+            <h3 className="text-2xl font-semibold text-[#22341c]">
+              Contactar vendedor
+            </h3>
+            <p className="mt-1 text-sm text-[#817d58]">
+              Comparte tus datos para solicitar información sobre este terreno.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={cerrar}
+            disabled={enviando}
+            className="ml-4 flex h-10 w-10 items-center justify-center rounded-full text-[#817d58] transition hover:bg-[#f7f6f1] hover:text-[#22341c] disabled:opacity-60"
+            aria-label="Cerrar modal"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         <div className="space-y-5 px-6 py-6 md:px-8">

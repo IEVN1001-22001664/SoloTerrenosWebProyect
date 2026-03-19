@@ -31,6 +31,8 @@ const sepomexRoutes = require("./routes/sepomex.routes");
 const imagenesRoutes = require("./routes/imagenes.routes");
 const documentosLegalesRoutes = require("./routes/documentosLegales.routes");
 const leadsRoutes = require("./routes/leads.routes");
+const conversacionesRoutes = require("./routes/conversaciones.routes");
+const notificacionesRoutes = require("./routes/notificaciones.routes");
 
 // ======================================================
 // CREACIÓN DE LA APLICACIÓN EXPRESS
@@ -94,6 +96,12 @@ app.use("/api", documentosLegalesRoutes);
 
 // leads
 app.use("/api/leads", leadsRoutes);
+
+// Conversaciones
+app.use("/api/conversaciones", conversacionesRoutes);
+
+//notificaciones
+app.use("/api/notificaciones", notificacionesRoutes);
 
 // ======================================================
 // ARCHIVOS ESTÁTICOS

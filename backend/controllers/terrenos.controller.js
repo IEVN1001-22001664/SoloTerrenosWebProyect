@@ -642,13 +642,39 @@ exports.getMisTerrenos = async (req, res) => {
         t.estado_region,
         t.area_m2,
         t.creado_en,
+
         (
           SELECT ti.url
           FROM terreno_imagenes ti
           WHERE ti.terreno_id = t.id
           ORDER BY ti.id ASC
           LIMIT 1
-        ) AS imagen_principal
+        ) AS imagen_principal,
+
+        (
+          SELECT rt.estado_revision
+          FROM revisiones_terrenos rt
+          WHERE rt.terreno_id = t.id
+          ORDER BY rt.creado_en DESC
+          LIMIT 1
+        ) AS ultima_revision_estado,
+
+        (
+          SELECT rt.mensaje
+          FROM revisiones_terrenos rt
+          WHERE rt.terreno_id = t.id
+          ORDER BY rt.creado_en DESC
+          LIMIT 1
+        ) AS ultima_revision_mensaje,
+
+        (
+          SELECT rt.creado_en
+          FROM revisiones_terrenos rt
+          WHERE rt.terreno_id = t.id
+          ORDER BY rt.creado_en DESC
+          LIMIT 1
+        ) AS ultima_revision_fecha
+
       FROM terrenos t
       WHERE t.usuario_id = $1
       ORDER BY t.creado_en DESC

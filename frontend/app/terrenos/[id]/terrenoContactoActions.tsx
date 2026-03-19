@@ -61,7 +61,6 @@ export default function TerrenoContactoActions({ terrenoId }: Props) {
       limpiarActionDeUrl();
     }
   };
-console.log("USER EN CONTACTO:", user);//------------------------------------------------------------------
   return (
     <>
       <button

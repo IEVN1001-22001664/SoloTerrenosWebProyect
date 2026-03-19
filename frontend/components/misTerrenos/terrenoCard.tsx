@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+import { AlertTriangle, FileWarning } from "lucide-react";
 import EstadoTerrenoBadge from "./estadoTerrenoBadge";
 import ConfirmModal from "@/components/ui/confirmModal";
 
@@ -28,6 +29,9 @@ export default function TerrenoCard({
     : "https://via.placeholder.com/600x400?text=Sin+imagen";
 
   const estado = (terreno.estado || "").toLowerCase();
+  const ultimaRevisionEstado = (terreno.ultima_revision_estado || "").toLowerCase();
+  const ultimaRevisionMensaje = terreno.ultima_revision_mensaje || "";
+  const ultimaRevisionFecha = terreno.ultima_revision_fecha || null;
 
   const abrirModal = (accion: Exclude<AccionTerreno, null>) => {
     if (procesando !== null) return;
@@ -211,8 +215,22 @@ export default function TerrenoCard({
     "hover:-translate-y-1 hover:shadow-md",
     estado === "pausado"
       ? "border-[#817d58]/15 bg-[#f3f3ef] opacity-80"
+      : estado === "rechazado"
+      ? "border-red-200 bg-white"
       : "border-[#817d58]/20",
   ].join(" ");
+
+  const mostrarObservacionAdmin =
+    estado === "rechazado" && ultimaRevisionEstado === "rechazado" && ultimaRevisionMensaje;
+
+  const textoAuxiliar =
+    estado === "pausado"
+      ? "Este terreno está pausado y no es visible públicamente."
+      : estado === "pendiente"
+      ? "Esta publicación está en revisión administrativa antes de mostrarse públicamente."
+      : estado === "rechazado"
+      ? "Esta publicación fue rechazada. Revisa la observación del administrador, corrige la información y vuelve a postularla."
+      : "Puedes pausar o eliminar esta publicación desde aquí.";
 
   return (
     <>
@@ -223,7 +241,11 @@ export default function TerrenoCard({
             src={imagen}
             alt={terreno.titulo}
             className={`h-52 w-full object-cover transition duration-300 ${
-              estado === "pausado" ? "grayscale" : "group-hover:scale-[1.02]"
+              estado === "pausado"
+                ? "grayscale"
+                : estado === "rechazado"
+                ? ""
+                : "group-hover:scale-[1.02]"
             }`}
           />
 
@@ -236,6 +258,12 @@ export default function TerrenoCard({
               <span className="rounded-full border border-white/40 bg-white/90 px-4 py-2 text-xs font-semibold tracking-wide text-[#22341c] shadow-sm backdrop-blur-sm">
                 PUBLICACIÓN PAUSADA
               </span>
+            </div>
+          )}
+
+          {estado === "rechazado" && (
+            <div className="absolute bottom-3 right-3 rounded-full bg-red-600 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white shadow-sm">
+              Requiere corrección
             </div>
           )}
         </div>
@@ -266,7 +294,11 @@ export default function TerrenoCard({
 
           <div
             className={`grid grid-cols-2 gap-3 rounded-xl p-3 text-sm transition ${
-              estado === "pausado" ? "bg-[#efefe9]" : "bg-[#fafaf7]"
+              estado === "pausado"
+                ? "bg-[#efefe9]"
+                : estado === "rechazado"
+                ? "bg-red-50"
+                : "bg-[#fafaf7]"
             }`}
           >
             <div>
@@ -286,13 +318,65 @@ export default function TerrenoCard({
             </div>
           </div>
 
+          {/* OBSERVACIÓN DEL ADMINISTRADOR */}
+          {mostrarObservacionAdmin && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 text-red-600">
+                  <FileWarning size={18} />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-sm font-semibold text-red-700">
+                    Observación del administrador
+                  </h4>
+
+                  <p className="mt-2 text-sm leading-6 text-[#4f4a3d]">
+                    {ultimaRevisionMensaje}
+                  </p>
+
+                  {ultimaRevisionFecha && (
+                    <p className="mt-3 text-xs text-red-600/80">
+                      Revisado el{" "}
+                      {new Date(ultimaRevisionFecha).toLocaleString("es-MX", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* AVISO DE PENDIENTE */}
+          {estado === "pendiente" && !mostrarObservacionAdmin && (
+            <div className="rounded-2xl border border-[#9f885c]/25 bg-[#9f885c]/10 p-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl bg-[#9f885c]/20 text-[#22341c]">
+                  <AlertTriangle size={18} />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-sm font-semibold text-[#22341c]">
+                    En revisión administrativa
+                  </h4>
+
+                  <p className="mt-2 text-sm leading-6 text-[#4f4a3d]">
+                    Tu publicación está siendo revisada por el administrador antes de hacerse visible públicamente.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ACCIONES PRINCIPALES */}
           <div className="flex gap-3">
             <Link
               href={`/colaborador/misTerrenos/${terreno.id}/editar`}
               className="flex-1 rounded-xl bg-[#22341c] px-4 py-3 text-center text-sm font-medium text-white transition hover:bg-[#2d4724]"
             >
-              Editar
+              {estado === "rechazado" ? "Editar y reenviar" : "Editar"}
             </Link>
 
             <Link
@@ -337,11 +421,7 @@ export default function TerrenoCard({
 
           {/* MENSAJE AUXILIAR */}
           <p className="text-xs text-[#817d58]">
-            {estado === "pausado"
-              ? "Este terreno está pausado y no es visible públicamente."
-              : estado === "pendiente"
-              ? "Esta publicación está en revisión antes de mostrarse públicamente."
-              : "Puedes pausar o eliminar esta publicación desde aquí."}
+            {textoAuxiliar}
           </p>
         </div>
       </div>
