@@ -491,16 +491,24 @@ export default function Navbar() {
                 </Link>
 
                 <div className="relative" ref={profileRef}>
-              <button
-                type="button"
-                onClick={() => setOpenProfileMenu((prev) => !prev)}
-                className="flex items-center gap-2 rounded-full border border-[#817d58]/15 bg-white px-3 py-2 text-[#22341c] transition hover:bg-[#f7f6f1]"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#9f885c]/15">
-                  <User size={16} />
-                </div>
-                <ChevronDown size={16} />
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setOpenProfileMenu((prev) => !prev)}
+                  className="flex items-center gap-2 rounded-full border border-[#817d58]/15 bg-white px-3 py-2 text-[#22341c] transition hover:bg-[#f7f6f1]"
+                >
+                  {user?.foto_perfil ? (
+                    <img
+                      src={`http://localhost:5000${user.foto_perfil}`}
+                      alt="Foto de perfil"
+                      className="h-8 w-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#9f885c]/15">
+                      <User size={16} />
+                    </div>
+                  )}
+                  <ChevronDown size={16} />
+                </button>
 
               <AnimatePresence>
                 {openProfileMenu && (
@@ -508,15 +516,31 @@ export default function Navbar() {
                     initial={{ opacity: 0, y: -8, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -8, scale: 0.98 }}
-                    className="absolute right-0 top-12 z-50 w-[250px] overflow-hidden rounded-[1.5rem] border border-[#817d58]/12 bg-white shadow-2xl"
+                    className="absolute right-0 top-12 z-50 w-[280px] overflow-hidden rounded-[1.5rem] border border-[#817d58]/12 bg-white shadow-2xl"
                   >
                     <div className="border-b border-[#817d58]/12 px-4 py-4">
-                      <p className="font-semibold text-[#22341c]">
-                        {user?.nombre || "Colaborador"}
-                      </p>
-                      <p className="text-xs uppercase tracking-[0.12em] text-[#817d58]">
-                        Colaborador
-                      </p>
+                      <div className="flex items-center gap-3">
+                        {user?.foto_perfil ? (
+                          <img
+                            src={`http://localhost:5000${user.foto_perfil}`}
+                            alt="Foto de perfil"
+                            className="h-12 w-12 rounded-full object-cover ring-2 ring-[#9f885c]/15"
+                          />
+                        ) : (
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#9f885c]/15 text-[#22341c]">
+                            <User size={20} />
+                          </div>
+                        )}
+
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold text-[#22341c]">
+                            {user?.nombre || "Colaborador"}
+                          </p>
+                          <p className="text-xs uppercase tracking-[0.12em] text-[#817d58]">
+                            Colaborador
+                          </p>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="p-2">

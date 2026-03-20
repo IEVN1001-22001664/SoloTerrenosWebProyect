@@ -8,7 +8,7 @@ interface User {
   nombre: string;
   apellido?: string;
   email?: string;
-  telefono?: string;
+  foto_perfil?: string | null;
 }
 
 interface AuthContextType {
@@ -16,29 +16,42 @@ interface AuthContextType {
   loading: boolean;
   login: (user: User) => void;
   logout: () => Promise<void>;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
+  refreshUser: () => Promise<void>;
+  updateUser: (data: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
+
+const API_URL = "http://localhost:5000";
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const refreshUser = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/auth/me`, {
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        setUser(null);
+        return;
+      }
+
+      const data = await res.json();
+      setUser(data.user);
+    } catch (error) {
+      console.error("Error refrescando usuario:", error);
+      setUser(null);
+    }
+  };
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/auth/me", {
-          credentials: "include",
-        });
-
-        if (!res.ok) {
-          setUser(null);
-        } else {
-          const data = await res.json();
-          setUser(data.user);
-        }
-      } catch {
-        setUser(null);
+        await refreshUser();
       } finally {
         setLoading(false);
       }
@@ -51,8 +64,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(userData);
   };
 
+  const updateUser = (data: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      return { ...prev, ...data };
+    });
+  };
+
   const logout = async () => {
-    await fetch("http://localhost:5000/api/auth/logout", {
+    await fetch(`${API_URL}/api/auth/logout`, {
       method: "POST",
       credentials: "include",
     });
@@ -61,7 +81,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        logout,
+        setUser,
+        refreshUser,
+        updateUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

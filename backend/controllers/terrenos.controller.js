@@ -441,8 +441,19 @@ exports.updateTerreno = async (req, res) => {
 
       const autoAprobado = userResult.rows[0]?.auto_aprobado;
 
-      if (!autoAprobado) {
-        estadoFinal = "pendiente";
+      // Si estaba eliminado, no lo tocamos desde edición normal
+      if (terrenoActual.estado === "eliminado") {
+        estadoFinal = "eliminado";
+      }
+      // Si estaba pausado, conserva pausado al editar
+      else if (terrenoActual.estado === "pausado") {
+        estadoFinal = "pausado";
+      }
+      // Para cualquier publicación editable normal:
+      // - autoaprobado => aprobado
+      // - no autoaprobado => pendiente
+      else {
+        estadoFinal = autoAprobado ? "aprobado" : "pendiente";
       }
     }
 

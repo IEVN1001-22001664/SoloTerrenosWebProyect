@@ -347,3 +347,30 @@ exports.eliminarDefinitivamente = async (req, res) => {
     res.status(500).json({ message: "Error eliminando definitivamente" });
   }
 };
+
+const uploadProfilePhoto = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: "No se subió ninguna imagen" });
+    }
+
+    const ruta = `/uploads/perfiles/${req.file.filename}`;
+
+    await pool.query(
+      "UPDATE usuarios SET foto_perfil = $1 WHERE id = $2",
+      [ruta, req.user.id]
+    );
+
+    res.json({
+      message: "Foto actualizada",
+      foto_perfil: ruta,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error subiendo imagen" });
+  }
+};
