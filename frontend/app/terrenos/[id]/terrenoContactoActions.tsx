@@ -72,13 +72,6 @@ export default function TerrenoContactoActions({ terrenoId }: Props) {
         Contactar vendedor
       </button>
 
-      <button
-        type="button"
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-[#817d58]/25 bg-white px-5 py-3.5 text-sm font-semibold text-[#22341c] transition hover:bg-[#9f885c]/10"
-      >
-        <Bookmark size={16} />
-        Guardar favorito
-      </button>
 
       <ContactarVendedorModal
         open={openLeadModal}

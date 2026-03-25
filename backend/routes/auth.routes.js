@@ -10,12 +10,7 @@ router.get("/me", verifyToken, authController.me);
 router.get("/profile", verifyToken, authController.getProfile);
 router.put("/profile", verifyToken, authController.updateProfile);
 router.put("/change-password",verifyToken,authController.changePassword);
-router.post(
-  "/upload-profile-photo",
-  verifyToken,
-  upload.single("foto"),
-  authController.uploadProfilePhoto
-);
+router.post("/upload-profile-photo",verifyToken,upload.single("foto"),authController.uploadProfilePhoto);
 
 router.post("/logout", (req, res) => {
   res.clearCookie("token");

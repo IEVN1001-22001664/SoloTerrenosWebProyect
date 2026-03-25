@@ -3,9 +3,11 @@
 // ======================================================
 
 const express = require("express");
+const http = require("http");
 const cors = require("cors");
 require("dotenv").config();
 const cookieParser = require("cookie-parser");
+const { initSocket } = require("./socket");
 
 console.log("--- DEBUG DE VARIABLES EN LA MAC ---");
 console.log("Host:", process.env.DB_HOST);
@@ -33,6 +35,7 @@ const documentosLegalesRoutes = require("./routes/documentosLegales.routes");
 const leadsRoutes = require("./routes/leads.routes");
 const conversacionesRoutes = require("./routes/conversaciones.routes");
 const notificacionesRoutes = require("./routes/notificaciones.routes");
+const favoritosRoutes = require("./routes/favoritos.routes");
 
 // ======================================================
 // CREACIÓN DE LA APLICACIÓN EXPRESS
@@ -97,11 +100,14 @@ app.use("/api", documentosLegalesRoutes);
 // leads
 app.use("/api/leads", leadsRoutes);
 
-// Conversaciones
+// conversaciones
 app.use("/api/conversaciones", conversacionesRoutes);
 
-//notificaciones
+// notificaciones
 app.use("/api/notificaciones", notificacionesRoutes);
+
+// favoritos
+app.use("/api/favoritos", favoritosRoutes);
 
 // ======================================================
 // ARCHIVOS ESTÁTICOS
@@ -129,21 +135,25 @@ app.get("/", async (req, res) => {
 });
 
 // ======================================================
+// CONFIGURACIÓN PARA SOCKET.IO
+// ======================================================
+
+const server = http.createServer(app);
+
+// inicializar socket
+initSocket(server);
+
+// ======================================================
 // PUERTO DEL SERVIDOR
 // ======================================================
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Servidor de SoloTerrenos activo en http://0.0.0.0:${PORT}`);
-});
 
-// ======================================================
-// INICIO DEL SERVIDOR
-// ======================================================
-
-app.listen(PORT, () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log("=================================");
   console.log(`Servidor corriendo en puerto ${PORT}`);
   console.log(`http://localhost:${PORT}`);
+  console.log(`Servidor de SoloTerrenos activo en http://0.0.0.0:${PORT}`);
+  console.log("Socket.IO inicializado correctamente");
   console.log("=================================");
 });

@@ -2,9 +2,9 @@ import { LatLngTuple } from "leaflet";
 import Link from "next/link";
 import TerrenoMapWrapper from "./TerrenoMapWrapper";
 import TerrenoContactoActions from "./terrenoContactoActions";
+import FavoriteButton from "@/components/terrenos/favoriteButton";
 import {
   ArrowLeft,
-  Bookmark,
   MapPin,
   Ruler,
   ScanLine,
@@ -277,24 +277,33 @@ export default async function TerrenoDetalle({
             </div>
 
             <aside className="border-t border-[#817d58]/12 bg-white lg:border-l lg:border-t-0">
-              <div className="border-b border-[#817d58]/12 px-6 py-6">
-                <p className="text-sm uppercase tracking-[0.14em] text-[#817d58]">
-                  Información rápida
-                </p>
-                <p className="mt-2 text-3xl font-bold tracking-tight text-[#22341c]">
-                  {money(terreno.precio)}
-                </p>
+            <div className="border-b border-[#817d58]/12 px-6 py-6">
+              <p className="text-sm uppercase tracking-[0.14em] text-[#817d58]">
+                Información rápida
+              </p>
+              <p className="mt-2 text-3xl font-bold tracking-tight text-[#22341c]">
+                {money(terreno.precio)}
+              </p>
 
-                {terreno.negociable === true && (
-                  <p className="mt-2 text-sm font-medium text-[#828d4b]">
-                    El precio puede negociarse
-                  </p>
-                )}
-              </div>
+              {terreno.negociable === true && (
+                <p className="mt-2 text-sm font-medium text-[#828d4b]">
+                  El precio puede negociarse
+                </p>
+              )}
+            </div>
 
-              <div className="space-y-3 px-6 py-6">
-                <TerrenoContactoActions terrenoId={terreno.id} />
-              </div>
+            <div className="space-y-3 px-6 py-6">
+              <FavoriteButton
+                terrenoId={terreno.id}
+                iconOnly={false}
+                redirectTo={`/terrenos/${terreno.id}`}
+                className="w-full justify-center rounded-2xl px-4 py-3"
+                activeClassName="bg-[#9f885c]/15 text-[#22341c] border-[#9f885c]/25"
+                inactiveClassName="bg-white text-[#22341c] border-[#817d58]/18"
+              />
+
+              <TerrenoContactoActions terrenoId={terreno.id} />
+            </div>
 
               <div className="border-t border-[#817d58]/12 px-6 py-6">
                 <div className="space-y-3">

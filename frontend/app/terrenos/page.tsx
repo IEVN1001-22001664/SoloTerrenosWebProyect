@@ -4,13 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Bookmark,
   Search,
   MapPin,
   SlidersHorizontal,
   X,
   ArrowRight,
 } from "lucide-react";
+import FavoriteButton from "@/components/terrenos/favoriteButton";
 
 interface Terreno {
   id: number;
@@ -29,7 +29,6 @@ interface Terreno {
 
 export default function TerrenosPage() {
   const [terrenos, setTerrenos] = useState<Terreno[]>([]);
-  const [favoritos, setFavoritos] = useState<number[]>([]);
   const [cargando, setCargando] = useState(true);
   const [mostrarFiltrosMobile, setMostrarFiltrosMobile] = useState(false);
 
@@ -66,12 +65,6 @@ export default function TerrenosPage() {
 
     fetchTerrenos();
   }, []);
-
-  const toggleFavorito = (id: number) => {
-    setFavoritos((prev) =>
-      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
-    );
-  };
 
   const ubicacionesUnicas = useMemo(() => {
     const valores = terrenos
@@ -416,28 +409,16 @@ export default function TerrenosPage() {
                     />
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
 
-                    <button
-                      type="button"
-                      onClick={() => toggleFavorito(terreno.id)}
-                      className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/85 backdrop-blur-md shadow-sm transition hover:scale-105"
-                    >
-                      <motion.span
-                        animate={{
-                          scale: favoritos.includes(terreno.id) ? [1, 1.15, 1] : 1,
-                        }}
-                        transition={{ duration: 0.25 }}
-                      >
-                        <Bookmark
-                          size={18}
-                          className={
-                            favoritos.includes(terreno.id)
-                              ? "fill-[#003554] text-[#003554]"
-                              : "text-[#003554]"
-                          }
-                          strokeWidth={2}
-                        />
-                      </motion.span>
-                    </button>
+                    <div className="absolute right-3 top-3 z-10">
+                      <FavoriteButton
+                        terrenoId={terreno.id}
+                        size={18}
+                        redirectTo="/terrenos"
+                        className="bg-white/85 backdrop-blur-md shadow-sm"
+                        activeClassName="bg-white/90 text-[#003554] border-[#99B5D2]/30"
+                        inactiveClassName="bg-white/85 text-[#003554] border-[#99B5D2]/20"
+                      />
+                    </div>
 
                     <span className="absolute bottom-3 left-3 rounded-full bg-[#003554] px-3 py-1 text-[11px] font-medium text-white">
                       {terreno.uso_suelo || terreno.tipo || "Terreno"}

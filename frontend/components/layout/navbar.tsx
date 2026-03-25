@@ -19,6 +19,7 @@ import {
   LogOut,
   User,
   ChevronDown,
+  Heart,
 } from "lucide-react";
 
 interface Notificacion {
@@ -32,6 +33,8 @@ interface Notificacion {
   metadata?: any;
   creado_en: string;
 }
+
+const API_URL = "http://localhost:5000";
 
 export default function Navbar() {
   const router = useRouter();
@@ -47,7 +50,6 @@ export default function Navbar() {
 
   const notifRef = useRef<HTMLDivElement | null>(null);
   const profileRef = useRef<HTMLDivElement | null>(null);
-  
 
   const navLinksPublic = [
     { label: "Comprar", href: "/terrenos" },
@@ -81,6 +83,11 @@ export default function Navbar() {
       ? "USUARIO"
       : "";
 
+  const fotoPerfilUrl = useMemo(() => {
+    if (!user?.foto_perfil) return "";
+    return `${API_URL}${user.foto_perfil}`;
+  }, [user?.foto_perfil]);
+
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
@@ -104,7 +111,10 @@ export default function Navbar() {
         setOpenNotifPanel(false);
       }
 
-      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(event.target as Node)
+      ) {
         setOpenProfileMenu(false);
       }
     };
@@ -118,7 +128,7 @@ export default function Navbar() {
       setCargandoNotificaciones(true);
 
       const response = await fetch(
-        "http://localhost:5000/api/notificaciones/mis-notificaciones",
+        `${API_URL}/api/notificaciones/mis-notificaciones`,
         {
           credentials: "include",
         }
@@ -142,7 +152,7 @@ export default function Navbar() {
 
   const marcarComoLeida = async (id: number) => {
     try {
-      await fetch(`http://localhost:5000/api/notificaciones/${id}/leer`, {
+      await fetch(`${API_URL}/api/notificaciones/${id}/leer`, {
         method: "PATCH",
         credentials: "include",
       });
@@ -157,7 +167,7 @@ export default function Navbar() {
 
   const marcarTodasComoLeidas = async () => {
     try {
-      await fetch("http://localhost:5000/api/notificaciones/leer-todas", {
+      await fetch(`${API_URL}/api/notificaciones/leer-todas`, {
         method: "PATCH",
         credentials: "include",
       });
@@ -219,10 +229,12 @@ export default function Navbar() {
       return;
     }
 
-    router.push("/usuario/mensajes");
+    if (user?.rol === "usuario") {
+      router.push("/usuario/notificaciones");
+      return;
+    }
   };
 
-  // Los returns condicionales van DESPUÉS de todos los hooks
   if (
     pathname === "/login" ||
     pathname === "/register" ||
@@ -425,7 +437,7 @@ export default function Navbar() {
                           href={
                             user?.rol === "colaborador"
                               ? "/colaborador/notificaciones"
-                              : "/usuario/mensajes"
+                              : "/usuario/notificaciones"
                           }
                           onClick={() => setOpenNotifPanel(false)}
                           className="flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-[#22341c] transition hover:bg-[#f7f6f1]"
@@ -443,25 +455,132 @@ export default function Navbar() {
             {user?.rol === "usuario" && (
               <>
                 <Link
-                  href="/usuario/mensajes"
-                  className="transition hover:text-[#828d4b] text-[#4f4a3d]"
+                  href="/usuario/favoritos"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-[#817d58]/15 bg-white text-[#22341c] transition hover:bg-[#f7f6f1]"
+                  title="Favoritos"
                 >
-                  Mensajes
+                  <Heart size={18} />
                 </Link>
 
                 <Link
-                  href="/dashboard"
-                  className="transition hover:text-[#828d4b] text-[#4f4a3d]"
+                  href="/usuario/mensajes"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-[#817d58]/15 bg-white text-[#22341c] transition hover:bg-[#f7f6f1]"
+                  title="Mensajes"
                 >
-                  Mi cuenta
+                  <MessageCircle size={18} />
                 </Link>
 
-                <button
-                  onClick={handleLogout}
-                  className="text-sm text-red-500 transition hover:text-red-600"
-                >
-                  Cerrar sesión
-                </button>
+                <div className="relative" ref={profileRef}>
+                  <button
+                    type="button"
+                    onClick={() => setOpenProfileMenu((prev) => !prev)}
+                    className="flex items-center gap-2 rounded-full border border-[#817d58]/15 bg-white px-3 py-2 text-[#22341c] transition hover:bg-[#f7f6f1]"
+                  >
+                    {fotoPerfilUrl ? (
+                      <img
+                        src={fotoPerfilUrl}
+                        alt="Foto de perfil"
+                        className="h-8 w-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#9f885c]/15">
+                        <User size={16} />
+                      </div>
+                    )}
+                    <ChevronDown size={16} />
+                  </button>
+
+                  <AnimatePresence>
+                    {openProfileMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                        className="absolute right-0 top-12 z-50 w-[280px] overflow-hidden rounded-[1.5rem] border border-[#817d58]/12 bg-white shadow-2xl"
+                      >
+                        <div className="border-b border-[#817d58]/12 px-4 py-4">
+                          <div className="flex items-center gap-3">
+                            {fotoPerfilUrl ? (
+                              <img
+                                src={fotoPerfilUrl}
+                                alt="Foto de perfil"
+                                className="h-12 w-12 rounded-full object-cover ring-2 ring-[#9f885c]/15"
+                              />
+                            ) : (
+                              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#9f885c]/15 text-[#22341c]">
+                                <User size={20} />
+                              </div>
+                            )}
+
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-[#22341c]">
+                                {user?.nombre || "Usuario"}
+                              </p>
+                              <p className="text-xs uppercase tracking-[0.12em] text-[#817d58]">
+                                Usuario
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="p-2">
+                          <Link
+                            href="/usuario"
+                            onClick={() => setOpenProfileMenu(false)}
+                            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#22341c] transition hover:bg-[#f7f6f1]"
+                          >
+                            <LayoutGrid size={16} />
+                            Mi cuenta
+                          </Link>
+
+                          <Link
+                            href="/usuario/perfil"
+                            onClick={() => setOpenProfileMenu(false)}
+                            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#22341c] transition hover:bg-[#f7f6f1]"
+                          >
+                            <User size={16} />
+                            Mi perfil
+                          </Link>
+
+                          <Link
+                            href="/usuario/favoritos"
+                            onClick={() => setOpenProfileMenu(false)}
+                            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#22341c] transition hover:bg-[#f7f6f1]"
+                          >
+                            <Heart size={16} />
+                            Favoritos
+                          </Link>
+
+                          <Link
+                            href="/usuario/mensajes"
+                            onClick={() => setOpenProfileMenu(false)}
+                            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#22341c] transition hover:bg-[#f7f6f1]"
+                          >
+                            <MessageCircle size={16} />
+                            Mensajes
+                          </Link>
+
+                          <Link
+                            href="/usuario/configuracion"
+                            onClick={() => setOpenProfileMenu(false)}
+                            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#22341c] transition hover:bg-[#f7f6f1]"
+                          >
+                            <Settings size={16} />
+                            Configuración
+                          </Link>
+
+                          <button
+                            onClick={handleLogout}
+                            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-red-600 transition hover:bg-red-50"
+                          >
+                            <LogOut size={16} />
+                            Cerrar sesión
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </>
             )}
 
@@ -469,17 +588,18 @@ export default function Navbar() {
               <>
                 <Link
                   href="/colaborador/mensajes"
-                  className="flex items-center gap-2 text-[#4f4a3d] transition hover:text-[#828d4b]"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-[#817d58]/15 bg-white text-[#22341c] transition hover:bg-[#f7f6f1]"
+                  title="Mensajes"
                 >
-                  <MessageCircle size={16} />
-                  
+                  <MessageCircle size={18} />
                 </Link>
 
                 <Link
                   href="/colaborador"
-                  className="flex items-center gap-2 text-[#4f4a3d] transition hover:text-[#828d4b]"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-[#817d58]/15 bg-white text-[#22341c] transition hover:bg-[#f7f6f1]"
+                  title="Centro de control"
                 >
-                  <LayoutGrid size={16} />
+                  <LayoutGrid size={18} />
                 </Link>
 
                 <Link
@@ -491,107 +611,107 @@ export default function Navbar() {
                 </Link>
 
                 <div className="relative" ref={profileRef}>
-                <button
-                  type="button"
-                  onClick={() => setOpenProfileMenu((prev) => !prev)}
-                  className="flex items-center gap-2 rounded-full border border-[#817d58]/15 bg-white px-3 py-2 text-[#22341c] transition hover:bg-[#f7f6f1]"
-                >
-                  {user?.foto_perfil ? (
-                    <img
-                      src={`http://localhost:5000${user.foto_perfil}`}
-                      alt="Foto de perfil"
-                      className="h-8 w-8 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#9f885c]/15">
-                      <User size={16} />
-                    </div>
-                  )}
-                  <ChevronDown size={16} />
-                </button>
-
-              <AnimatePresence>
-                {openProfileMenu && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -8, scale: 0.98 }}
-                    className="absolute right-0 top-12 z-50 w-[280px] overflow-hidden rounded-[1.5rem] border border-[#817d58]/12 bg-white shadow-2xl"
+                  <button
+                    type="button"
+                    onClick={() => setOpenProfileMenu((prev) => !prev)}
+                    className="flex items-center gap-2 rounded-full border border-[#817d58]/15 bg-white px-3 py-2 text-[#22341c] transition hover:bg-[#f7f6f1]"
                   >
-                    <div className="border-b border-[#817d58]/12 px-4 py-4">
-                      <div className="flex items-center gap-3">
-                        {user?.foto_perfil ? (
-                          <img
-                            src={`http://localhost:5000${user.foto_perfil}`}
-                            alt="Foto de perfil"
-                            className="h-12 w-12 rounded-full object-cover ring-2 ring-[#9f885c]/15"
-                          />
-                        ) : (
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#9f885c]/15 text-[#22341c]">
-                            <User size={20} />
-                          </div>
-                        )}
-
-                        <div className="min-w-0">
-                          <p className="truncate font-semibold text-[#22341c]">
-                            {user?.nombre || "Colaborador"}
-                          </p>
-                          <p className="text-xs uppercase tracking-[0.12em] text-[#817d58]">
-                            Colaborador
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-2">
-                      <Link
-                        href="/colaborador/perfil"
-                        onClick={() => setOpenProfileMenu(false)}
-                        className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#22341c] transition hover:bg-[#f7f6f1]"
-                      >
+                    {fotoPerfilUrl ? (
+                      <img
+                        src={fotoPerfilUrl}
+                        alt="Foto de perfil"
+                        className="h-8 w-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#9f885c]/15">
                         <User size={16} />
-                        Mi perfil
-                      </Link>
+                      </div>
+                    )}
+                    <ChevronDown size={16} />
+                  </button>
 
-                      <Link
-                        href="/colaborador"
-                        onClick={() => setOpenProfileMenu(false)}
-                        className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#22341c] transition hover:bg-[#f7f6f1]"
+                  <AnimatePresence>
+                    {openProfileMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                        className="absolute right-0 top-12 z-50 w-[280px] overflow-hidden rounded-[1.5rem] border border-[#817d58]/12 bg-white shadow-2xl"
                       >
-                        <LayoutGrid size={16} />
-                        Centro de control
-                      </Link>
+                        <div className="border-b border-[#817d58]/12 px-4 py-4">
+                          <div className="flex items-center gap-3">
+                            {fotoPerfilUrl ? (
+                              <img
+                                src={fotoPerfilUrl}
+                                alt="Foto de perfil"
+                                className="h-12 w-12 rounded-full object-cover ring-2 ring-[#9f885c]/15"
+                              />
+                            ) : (
+                              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#9f885c]/15 text-[#22341c]">
+                                <User size={20} />
+                              </div>
+                            )}
 
-                      <Link
-                        href="/colaborador/configuracion"
-                        onClick={() => setOpenProfileMenu(false)}
-                        className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#22341c] transition hover:bg-[#f7f6f1]"
-                      >
-                        <Settings size={16} />
-                        Configuración
-                      </Link>
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-[#22341c]">
+                                {user?.nombre || "Colaborador"}
+                              </p>
+                              <p className="text-xs uppercase tracking-[0.12em] text-[#817d58]">
+                                Colaborador
+                              </p>
+                            </div>
+                          </div>
+                        </div>
 
-                      <Link
-                        href="/colaborador/membresia"
-                        onClick={() => setOpenProfileMenu(false)}
-                        className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#22341c] transition hover:bg-[#f7f6f1]"
-                      >
-                        <BadgeCheck size={16} />
-                        Membresía
-                      </Link>
+                        <div className="p-2">
+                          <Link
+                            href="/colaborador/perfil"
+                            onClick={() => setOpenProfileMenu(false)}
+                            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#22341c] transition hover:bg-[#f7f6f1]"
+                          >
+                            <User size={16} />
+                            Mi perfil
+                          </Link>
 
-                      <button
-                        onClick={handleLogout}
-                        className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-red-600 transition hover:bg-red-50"
-                      >
-                        <LogOut size={16} />
-                        Cerrar sesión
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                          <Link
+                            href="/colaborador"
+                            onClick={() => setOpenProfileMenu(false)}
+                            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#22341c] transition hover:bg-[#f7f6f1]"
+                          >
+                            <LayoutGrid size={16} />
+                            Centro de control
+                          </Link>
+
+                          <Link
+                            href="/colaborador/configuracion"
+                            onClick={() => setOpenProfileMenu(false)}
+                            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#22341c] transition hover:bg-[#f7f6f1]"
+                          >
+                            <Settings size={16} />
+                            Configuración
+                          </Link>
+
+                          <Link
+                            href="/colaborador/membresia"
+                            onClick={() => setOpenProfileMenu(false)}
+                            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#22341c] transition hover:bg-[#f7f6f1]"
+                          >
+                            <BadgeCheck size={16} />
+                            Membresía
+                          </Link>
+
+                          <button
+                            onClick={handleLogout}
+                            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-red-600 transition hover:bg-red-50"
+                          >
+                            <LogOut size={16} />
+                            Cerrar sesión
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </>
             )}
           </div>
@@ -637,6 +757,23 @@ export default function Navbar() {
                       {link.label}
                     </Link>
                   ))}
+
+                  <Link
+                    href="/usuario"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="text-[#22341c]"
+                  >
+                    Mi cuenta
+                  </Link>
+
+                  <Link
+                    href="/usuario/favoritos"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="text-[#22341c]"
+                  >
+                    Favoritos
+                  </Link>
+
                   <Link
                     href="/usuario/mensajes"
                     onClick={() => setIsMenuOpen(false)}
@@ -644,12 +781,29 @@ export default function Navbar() {
                   >
                     Mensajes
                   </Link>
+
                   <Link
-                    href="/dashboard"
+                    href="/usuario/notificaciones"
                     onClick={() => setIsMenuOpen(false)}
                     className="text-[#22341c]"
                   >
-                    Mi cuenta
+                    Notificaciones
+                  </Link>
+
+                  <Link
+                    href="/usuario/perfil"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="text-[#22341c]"
+                  >
+                    Mi perfil
+                  </Link>
+
+                  <Link
+                    href="/usuario/configuracion"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="text-[#22341c]"
+                  >
+                    Configuración
                   </Link>
                 </>
               )}
@@ -696,7 +850,14 @@ export default function Navbar() {
                     onClick={() => setIsMenuOpen(false)}
                     className="text-[#22341c]"
                   >
-                    Perfil (próximamente)
+                    Mi perfil
+                  </Link>
+                  <Link
+                    href="/colaborador/configuracion"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="text-[#22341c]"
+                  >
+                    Configuración
                   </Link>
                   <Link
                     href="/publicar"

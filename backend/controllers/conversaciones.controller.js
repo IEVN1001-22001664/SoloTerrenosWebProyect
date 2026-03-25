@@ -1,3 +1,4 @@
+const { getIO } = require("../socket");
 const pool = require("../db");
 
 // =================================
@@ -114,8 +115,8 @@ exports.getMensajesConversacion = async (req, res) => {
     const conversacion = conversacionResult.rows[0];
 
     if (
-      conversacion.comprador_id !== userId &&
-      conversacion.vendedor_id !== userId
+      Number(conversacion.comprador_id) !== Number(userId) &&
+      Number(conversacion.vendedor_id) !== Number(userId)
     ) {
       return res.status(403).json({
         message: "No tienes permiso para ver esta conversación",
@@ -141,7 +142,6 @@ exports.getMensajesConversacion = async (req, res) => {
       [id]
     );
 
-    // Marcar como leídos los mensajes del otro usuario
     await pool.query(
       `
       UPDATE mensajes
@@ -206,8 +206,8 @@ exports.sendMensaje = async (req, res) => {
     const conversacion = conversacionResult.rows[0];
 
     if (
-      conversacion.comprador_id !== userId &&
-      conversacion.vendedor_id !== userId
+      Number(conversacion.comprador_id) !== Number(userId) &&
+      Number(conversacion.vendedor_id) !== Number(userId)
     ) {
       return res.status(403).json({
         message: "No tienes permiso para enviar mensajes en esta conversación",
@@ -242,7 +242,7 @@ exports.sendMensaje = async (req, res) => {
     );
 
     const destinatarioId =
-      conversacion.comprador_id === userId
+      Number(conversacion.comprador_id) === Number(userId)
         ? conversacion.vendedor_id
         : conversacion.comprador_id;
 
@@ -275,11 +275,44 @@ exports.sendMensaje = async (req, res) => {
       ]
     );
 
+    const remitenteResult = await client.query(
+      `
+      SELECT id, nombre, apellido
+      FROM usuarios
+      WHERE id = $1
+      LIMIT 1
+      `,
+      [userId]
+    );
+
     await client.query("COMMIT");
+
+    const remitente = remitenteResult.rows[0] || {};
+
+    const mensajePayload = {
+      id: mensajeResult.rows[0].id,
+      conversacion_id: mensajeResult.rows[0].conversacion_id,
+      remitente_id: mensajeResult.rows[0].remitente_id,
+      contenido: mensajeResult.rows[0].contenido,
+      leido: mensajeResult.rows[0].leido,
+      creado_en: mensajeResult.rows[0].creado_en,
+      nombre: remitente.nombre || "",
+      apellido: remitente.apellido || "",
+    };
+
+    try {
+      const io = getIO();
+
+      io.to(`user_${destinatarioId}`).emit("nuevo_mensaje", mensajePayload);
+
+      io.to(`conv_${Number(id)}`).emit("nuevo_mensaje", mensajePayload);
+    } catch (socketError) {
+      console.error("Error emitiendo socket nuevo_mensaje:", socketError);
+    }
 
     res.status(201).json({
       message: "Mensaje enviado correctamente",
-      mensaje: mensajeResult.rows[0],
+      mensaje: mensajePayload,
     });
   } catch (error) {
     await client.query("ROLLBACK");
