@@ -21,6 +21,7 @@ import {
   ChevronDown,
   Heart,
 } from "lucide-react";
+import { getSocket } from "@/src/lib/socket";
 
 interface Notificacion {
   id: number;
@@ -32,6 +33,11 @@ interface Notificacion {
   referencia_tipo?: string;
   metadata?: any;
   creado_en: string;
+}
+
+interface ConversacionResumen {
+  conversacion_id: number;
+  no_leidos?: string | number;
 }
 
 const API_URL = "http://localhost:5000";
@@ -47,6 +53,7 @@ export default function Navbar() {
   const [openNotifPanel, setOpenNotifPanel] = useState(false);
   const [cargandoNotificaciones, setCargandoNotificaciones] = useState(false);
   const [openProfileMenu, setOpenProfileMenu] = useState(false);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
   const notifRef = useRef<HTMLDivElement | null>(null);
   const profileRef = useRef<HTMLDivElement | null>(null);
@@ -103,7 +110,8 @@ export default function Navbar() {
     if (user.rol === "admin") return;
 
     fetchNotificaciones();
-  }, [loading, user]);
+    fetchUnreadMessagesCount();
+  }, [loading, user, pathname]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -122,6 +130,35 @@ export default function Navbar() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user) return;
+    if (user.rol === "admin") return;
+
+    const socket = getSocket();
+
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    const handleNuevoMensaje = () => {
+      fetchUnreadMessagesCount();
+      fetchNotificaciones();
+    };
+
+    const handleNuevaNotificacion = () => {
+      fetchNotificaciones();
+    };
+
+    socket.on("nuevo_mensaje", handleNuevoMensaje);
+    socket.on("nueva_notificacion", handleNuevaNotificacion);
+
+    return () => {
+      socket.off("nuevo_mensaje", handleNuevoMensaje);
+      socket.off("nueva_notificacion", handleNuevaNotificacion);
+    };
+  }, [loading, user]);
 
   const fetchNotificaciones = async () => {
     try {
@@ -147,6 +184,32 @@ export default function Navbar() {
       setNotificaciones([]);
     } finally {
       setCargandoNotificaciones(false);
+    }
+  };
+
+  const fetchUnreadMessagesCount = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/conversaciones/mias`, {
+        credentials: "include",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setUnreadMessagesCount(0);
+        return;
+      }
+
+      const conversaciones: ConversacionResumen[] = Array.isArray(data) ? data : [];
+      const total = conversaciones.reduce(
+        (acc, conv) => acc + Number(conv.no_leidos || 0),
+        0
+      );
+
+      setUnreadMessagesCount(total);
+    } catch (error) {
+      console.error("Error cargando contador de mensajes:", error);
+      setUnreadMessagesCount(0);
     }
   };
 
@@ -464,10 +527,15 @@ export default function Navbar() {
 
                 <Link
                   href="/usuario/mensajes"
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-[#817d58]/15 bg-white text-[#22341c] transition hover:bg-[#f7f6f1]"
+                  className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[#817d58]/15 bg-white text-[#22341c] transition hover:bg-[#f7f6f1]"
                   title="Mensajes"
                 >
                   <MessageCircle size={18} />
+                  {unreadMessagesCount > 0 && (
+                    <span className="absolute -right-1 -top-1 min-w-[20px] rounded-full bg-[#828d4b] px-1.5 py-0.5 text-center text-[11px] font-bold text-white">
+                      {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
+                    </span>
+                  )}
                 </Link>
 
                 <div className="relative" ref={profileRef}>
@@ -588,10 +656,15 @@ export default function Navbar() {
               <>
                 <Link
                   href="/colaborador/mensajes"
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-[#817d58]/15 bg-white text-[#22341c] transition hover:bg-[#f7f6f1]"
+                  className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[#817d58]/15 bg-white text-[#22341c] transition hover:bg-[#f7f6f1]"
                   title="Mensajes"
                 >
                   <MessageCircle size={18} />
+                  {unreadMessagesCount > 0 && (
+                    <span className="absolute -right-1 -top-1 min-w-[20px] rounded-full bg-[#828d4b] px-1.5 py-0.5 text-center text-[11px] font-bold text-white">
+                      {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
+                    </span>
+                  )}
                 </Link>
 
                 <Link
@@ -779,7 +852,7 @@ export default function Navbar() {
                     onClick={() => setIsMenuOpen(false)}
                     className="text-[#22341c]"
                   >
-                    Mensajes
+                    Mensajes {unreadMessagesCount > 0 ? `(${unreadMessagesCount})` : ""}
                   </Link>
 
                   <Link
@@ -787,7 +860,7 @@ export default function Navbar() {
                     onClick={() => setIsMenuOpen(false)}
                     className="text-[#22341c]"
                   >
-                    Notificaciones
+                    Notificaciones {totalNoLeidas > 0 ? `(${totalNoLeidas})` : ""}
                   </Link>
 
                   <Link
@@ -836,14 +909,14 @@ export default function Navbar() {
                     onClick={() => setIsMenuOpen(false)}
                     className="text-[#22341c]"
                   >
-                    Mensajes
+                    Mensajes {unreadMessagesCount > 0 ? `(${unreadMessagesCount})` : ""}
                   </Link>
                   <Link
                     href="/colaborador/notificaciones"
                     onClick={() => setIsMenuOpen(false)}
                     className="text-[#22341c]"
                   >
-                    Notificaciones
+                    Notificaciones {totalNoLeidas > 0 ? `(${totalNoLeidas})` : ""}
                   </Link>
                   <Link
                     href="/colaborador/perfil"

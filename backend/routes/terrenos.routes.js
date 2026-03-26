@@ -15,15 +15,20 @@ const roleMiddleware = require("../middleware/roleMiddleware");
 // RUTAS PÚBLICAS
 // ======================================================
 
-// Obtener terrenos públicos (usado por mapa)
+// Obtener terrenos públicos (usado por mapa antiguo)
 router.get("/publicos", terrenosController.getPublicos);
+
+// Obtener terrenos para vista de mapa
+router.get("/mapa", terrenosController.getTerrenosMapa);
 
 // Obtener todos los terrenos aprobados
 router.get("/", terrenosController.getAllPublic);
 
+
 // ======================================================
-// Obtener terrenos del colaborador autenticado
+// OBTENER TERRENOS DEL COLABORADOR AUTENTICADO
 // ======================================================
+
 router.get(
   "/mis-terrenos",
   authMiddleware,
@@ -80,6 +85,7 @@ router.patch(
   terrenosController.pausarTerreno
 );
 
+
 // ======================================================
 // REACTIVAR TERRENO
 // ======================================================
@@ -90,6 +96,7 @@ router.patch(
   roleMiddleware("colaborador", "admin"),
   terrenosController.reactivarTerreno
 );
+
 
 // ======================================================
 // ELIMINAR TERRENO
@@ -114,17 +121,12 @@ router.get(
   terrenosController.getByIdForEdit
 );
 
+
 // ======================================================
 // OBTENER TERRENO POR ID (SIEMPRE AL FINAL)
 // ======================================================
 
-router.get("/:id", terrenosController.getById);
-
-
-
-
-
-
+router.get("/id/:id", terrenosController.getById);
 
 
 // ======================================================

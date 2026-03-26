@@ -109,6 +109,9 @@ app.use("/api/notificaciones", notificacionesRoutes);
 // favoritos
 app.use("/api/favoritos", favoritosRoutes);
 
+//Mapa de Zonas
+app.use("/api/terrenos", terrenosRoutes);
+
 // ======================================================
 // ARCHIVOS ESTÁTICOS
 // ======================================================

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Send, Search, MapPin, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
+import { getSocket } from "@/src/lib/socket";
 
 interface Conversacion {
   conversacion_id: number;
@@ -101,6 +102,7 @@ export default function UsuarioMensajesPage() {
 
     return () => clearTimeout(timeout);
   }, [conversacionActiva?.conversacion_id]);
+
   useEffect(() => {
     if (!mensajes.length) return;
 
@@ -112,6 +114,94 @@ export default function UsuarioMensajesPage() {
     return () => clearTimeout(timeout);
   }, [mensajes]);
 
+  useEffect(() => {
+    if (loading) return;
+    if (!user) return;
+
+    const socket = getSocket();
+
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    const handleNuevoMensaje = (mensaje: Mensaje) => {
+      const perteneceActiva =
+        Number(mensaje.conversacion_id) ===
+        Number(conversacionActiva?.conversacion_id);
+
+      if (perteneceActiva) {
+        setMensajes((prev) => {
+          const sinTemporalesEquivalentes = prev.filter(
+            (msg) =>
+              !(
+                msg.temporal &&
+                msg.remitente_id === mensaje.remitente_id &&
+                msg.contenido.trim() === mensaje.contenido.trim()
+              )
+          );
+
+          const yaExiste = sinTemporalesEquivalentes.some(
+            (msg) => Number(msg.id) === Number(mensaje.id)
+          );
+
+          if (yaExiste) return sinTemporalesEquivalentes;
+
+          return [...sinTemporalesEquivalentes, mensaje];
+        });
+      }
+
+      setConversaciones((prev) => {
+        const actualizadas = prev.map((conv) => {
+          if (
+            Number(conv.conversacion_id) !== Number(mensaje.conversacion_id)
+          ) {
+            return conv;
+          }
+
+          const esActiva =
+            Number(conv.conversacion_id) ===
+            Number(conversacionActiva?.conversacion_id);
+
+          return {
+            ...conv,
+            ultimo_mensaje: mensaje.contenido,
+            ultimo_mensaje_en: mensaje.creado_en,
+            no_leidos: esActiva ? 0 : Number(conv.no_leidos || 0) + 1,
+          };
+        });
+
+        actualizadas.sort((a, b) => {
+          const fechaA = a.ultimo_mensaje_en
+            ? new Date(a.ultimo_mensaje_en).getTime()
+            : 0;
+          const fechaB = b.ultimo_mensaje_en
+            ? new Date(b.ultimo_mensaje_en).getTime()
+            : 0;
+
+          return fechaB - fechaA;
+        });
+
+        return actualizadas;
+      });
+    };
+
+    socket.on("nuevo_mensaje", handleNuevoMensaje);
+
+    return () => {
+      socket.off("nuevo_mensaje", handleNuevoMensaje);
+    };
+  }, [loading, user, conversacionActiva?.conversacion_id]);
+
+  useEffect(() => {
+    if (!conversacionActiva) return;
+
+    const socket = getSocket();
+    socket.emit("join_conversacion", conversacionActiva.conversacion_id);
+
+    return () => {
+      socket.emit("leave_conversacion", conversacionActiva.conversacion_id);
+    };
+  }, [conversacionActiva?.conversacion_id]);
 
   const fetchConversaciones = async () => {
     try {
@@ -132,7 +222,6 @@ export default function UsuarioMensajesPage() {
       }
 
       const lista = Array.isArray(data) ? data : [];
-      setConversaciones(lista);
 
       if (lista.length > 0) {
         const conversacionDesdeUrl = conversacionQuery
@@ -227,13 +316,9 @@ export default function UsuarioMensajesPage() {
       setEnviando(true);
       justSentMessageRef.current = true;
 
-      // Mostrar mensaje inmediatamente
       setMensajes((prev) => [...prev, mensajeTemporal]);
-
-      // Limpiar input inmediatamente
       setMensajeNuevo("");
 
-      // Actualizar preview local de la conversación sin refetch global
       setConversaciones((prev) =>
         prev.map((conv) =>
           conv.conversacion_id === conversacionActiva.conversacion_id
@@ -275,8 +360,6 @@ export default function UsuarioMensajesPage() {
         return;
       }
 
-      // Si el backend devuelve el mensaje creado, lo usamos.
-      // Si no, conservamos el temporal pero lo marcamos como definitivo.
       const mensajeServidor = data?.mensaje;
 
       if (mensajeServidor) {

@@ -9,6 +9,7 @@ import {
   SlidersHorizontal,
   X,
   ArrowRight,
+  LandPlot,
 } from "lucide-react";
 import FavoriteButton from "@/components/terrenos/favoriteButton";
 
@@ -27,6 +28,8 @@ interface Terreno {
   estado?: string;
 }
 
+const API_URL = "http://localhost:5000";
+
 export default function TerrenosPage() {
   const [terrenos, setTerrenos] = useState<Terreno[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -44,7 +47,7 @@ export default function TerrenosPage() {
       try {
         setCargando(true);
 
-        const response = await fetch("http://localhost:5000/api/terrenos");
+        const response = await fetch(`${API_URL}/api/terrenos`);
         const data = await response.json();
 
         const soloVisibles = Array.isArray(data)
@@ -203,7 +206,7 @@ export default function TerrenosPage() {
   };
 
   const hayFiltrosActivos =
-    busqueda.trim() ||
+    !!busqueda.trim() ||
     filtroUbicacion !== "todas" ||
     filtroTipo !== "todos" ||
     filtroPrecio !== "todos" ||
@@ -213,7 +216,7 @@ export default function TerrenosPage() {
   const getImagenTerreno = (img?: string) => {
     if (!img) return "/images/terreno-placeholder.jpg";
     if (img.startsWith("http")) return img;
-    return `http://localhost:5000${img}`;
+    return `${API_URL}${img}`;
   };
 
   const Filtros = () => (
@@ -221,7 +224,7 @@ export default function TerrenosPage() {
       <select
         value={filtroUbicacion}
         onChange={(e) => setFiltroUbicacion(e.target.value)}
-        className="h-11 rounded-xl border border-[#99B5D2]/25 bg-white px-3 text-sm text-[#003554] outline-none transition focus:ring-2 focus:ring-[#99B5D2]"
+        className="h-11 rounded-xl border border-[#817d58]/18 bg-[#f7f6f1] px-3 text-sm text-[#22341c] outline-none transition focus:ring-2 focus:ring-[#9f885c]/35"
       >
         <option value="todas">Ubicación</option>
         {ubicacionesUnicas.map((ubicacion) => (
@@ -234,7 +237,7 @@ export default function TerrenosPage() {
       <select
         value={filtroTipo}
         onChange={(e) => setFiltroTipo(e.target.value)}
-        className="h-11 rounded-xl border border-[#99B5D2]/25 bg-white px-3 text-sm text-[#003554] outline-none transition focus:ring-2 focus:ring-[#99B5D2]"
+        className="h-11 rounded-xl border border-[#817d58]/18 bg-[#f7f6f1] px-3 text-sm text-[#22341c] outline-none transition focus:ring-2 focus:ring-[#9f885c]/35"
       >
         <option value="todos">Tipo</option>
         {tiposUnicos.map((tipo) => (
@@ -247,7 +250,7 @@ export default function TerrenosPage() {
       <select
         value={filtroPrecio}
         onChange={(e) => setFiltroPrecio(e.target.value)}
-        className="h-11 rounded-xl border border-[#99B5D2]/25 bg-white px-3 text-sm text-[#003554] outline-none transition focus:ring-2 focus:ring-[#99B5D2]"
+        className="h-11 rounded-xl border border-[#817d58]/18 bg-[#f7f6f1] px-3 text-sm text-[#22341c] outline-none transition focus:ring-2 focus:ring-[#9f885c]/35"
       >
         <option value="todos">Precio</option>
         <option value="0-500000">Hasta $500 mil</option>
@@ -259,7 +262,7 @@ export default function TerrenosPage() {
       <select
         value={filtroTamano}
         onChange={(e) => setFiltroTamano(e.target.value)}
-        className="h-11 rounded-xl border border-[#99B5D2]/25 bg-white px-3 text-sm text-[#003554] outline-none transition focus:ring-2 focus:ring-[#99B5D2]"
+        className="h-11 rounded-xl border border-[#817d58]/18 bg-[#f7f6f1] px-3 text-sm text-[#22341c] outline-none transition focus:ring-2 focus:ring-[#9f885c]/35"
       >
         <option value="todos">Área</option>
         <option value="0-250">Hasta 250 m²</option>
@@ -271,7 +274,7 @@ export default function TerrenosPage() {
       <select
         value={orden}
         onChange={(e) => setOrden(e.target.value)}
-        className="h-11 rounded-xl border border-[#99B5D2]/25 bg-white px-3 text-sm text-[#003554] outline-none transition focus:ring-2 focus:ring-[#99B5D2]"
+        className="h-11 rounded-xl border border-[#817d58]/18 bg-[#f7f6f1] px-3 text-sm text-[#22341c] outline-none transition focus:ring-2 focus:ring-[#9f885c]/35"
       >
         <option value="recientes">Ordenar</option>
         <option value="precio_menor">Precio ↑</option>
@@ -283,18 +286,46 @@ export default function TerrenosPage() {
   );
 
   return (
-    <main className="min-h-screen bg-[#f8fafb] px-4 pb-14 pt-18 md:px-6">
+    <main className="min-h-screen bg-[#f7f6f1] px-4 pb-14 pt-20 md:px-6">
       <section className="mx-auto max-w-7xl">
-        {/* Header corto */}
+        {/* Encabezado */}
+        <div className="mb-6 overflow-hidden rounded-[2rem] border border-[#817d58]/12 bg-white shadow-sm">
+          <div className="bg-gradient-to-r from-[#22341c] via-[#2f4727] to-[#828d4b] px-6 py-8 text-white md:px-8 md:py-10">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white/95">
+              <LandPlot size={14} />
+              Marketplace de terrenos
+            </div>
+
+            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
+                  Terrenos disponibles
+                </h1>
+                <p className="mt-2 max-w-2xl text-sm text-white/80 md:text-base">
+                  Explora oportunidades de inversión, vivienda o desarrollo con
+                  filtros precisos y una experiencia visual más clara.
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-white/10 px-5 py-4 backdrop-blur-sm">
+                <p className="text-xs uppercase tracking-[0.14em] text-white/70">
+                  Resultados
+                </p>
+                <p className="mt-1 text-2xl font-bold text-white">
+                  {cargando ? "..." : terrenosFiltrados.length}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Cabecera de filtros */}
         <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#003554] md:text-3xl">
-              Terrenos disponibles
-            </h1>
-            <p className="mt-1 text-sm text-[#426C8E]">
+            <p className="text-sm text-[#817d58]">
               {cargando
                 ? "Cargando publicaciones..."
-                : `${terrenosFiltrados.length} resultados disponibles`}
+                : `${terrenosFiltrados.length} terrenos visibles en esta búsqueda`}
             </p>
           </div>
 
@@ -302,7 +333,7 @@ export default function TerrenosPage() {
             <button
               type="button"
               onClick={limpiarFiltros}
-              className="inline-flex items-center gap-2 self-start rounded-xl px-3 py-2 text-sm font-medium text-[#426C8E] transition hover:bg-[#99B5D2]/10"
+              className="inline-flex items-center gap-2 self-start rounded-xl border border-[#817d58]/15 bg-white px-3 py-2 text-sm font-medium text-[#22341c] transition hover:bg-[#f2efe6]"
             >
               <X size={16} />
               Limpiar filtros
@@ -311,16 +342,16 @@ export default function TerrenosPage() {
         </div>
 
         {/* Toolbar desktop */}
-        <div className="mb-8 hidden rounded-2xl border border-[#99B5D2]/20 bg-white p-3 shadow-sm md:block">
-          <div className="grid grid-cols-[1.5fr_repeat(5,minmax(0,1fr))] gap-3">
-            <div className="flex h-11 items-center gap-2 rounded-xl border border-[#99B5D2]/25 bg-white px-3">
-              <Search size={16} className="text-[#426C8E]" />
+        <div className="mb-8 hidden rounded-[1.75rem] border border-[#817d58]/12 bg-white p-3 shadow-sm md:block">
+          <div className="grid grid-cols-[1.6fr_repeat(5,minmax(0,1fr))] gap-3">
+            <div className="flex h-11 items-center gap-2 rounded-xl border border-[#817d58]/18 bg-[#f7f6f1] px-3">
+              <Search size={16} className="text-[#817d58]" />
               <input
                 type="text"
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
-                placeholder="Buscar terrenos..."
-                className="w-full bg-transparent text-sm text-[#003554] outline-none placeholder:text-[#426C8E]/70"
+                placeholder="Buscar por título, ubicación, tipo o descripción..."
+                className="w-full bg-transparent text-sm text-[#22341c] outline-none placeholder:text-[#817d58]/70"
               />
             </div>
 
@@ -330,22 +361,22 @@ export default function TerrenosPage() {
 
         {/* Toolbar mobile */}
         <div className="mb-6 space-y-3 md:hidden">
-          <div className="flex items-center gap-3 rounded-2xl border border-[#99B5D2]/20 bg-white p-3 shadow-sm">
-            <div className="flex h-11 flex-1 items-center gap-2 rounded-xl border border-[#99B5D2]/25 bg-white px-3">
-              <Search size={16} className="text-[#426C8E]" />
+          <div className="flex items-center gap-3 rounded-[1.6rem] border border-[#817d58]/12 bg-white p-3 shadow-sm">
+            <div className="flex h-11 flex-1 items-center gap-2 rounded-xl border border-[#817d58]/18 bg-[#f7f6f1] px-3">
+              <Search size={16} className="text-[#817d58]" />
               <input
                 type="text"
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
                 placeholder="Buscar..."
-                className="w-full bg-transparent text-sm text-[#003554] outline-none placeholder:text-[#426C8E]/70"
+                className="w-full bg-transparent text-sm text-[#22341c] outline-none placeholder:text-[#817d58]/70"
               />
             </div>
 
             <button
               type="button"
               onClick={() => setMostrarFiltrosMobile((prev) => !prev)}
-              className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#99B5D2]/25 bg-white text-[#003554]"
+              className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#817d58]/18 bg-[#f7f6f1] text-[#22341c]"
             >
               <SlidersHorizontal size={18} />
             </button>
@@ -357,7 +388,7 @@ export default function TerrenosPage() {
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
-                className="grid grid-cols-1 gap-3 rounded-2xl border border-[#99B5D2]/20 bg-white p-3 shadow-sm"
+                className="grid grid-cols-1 gap-3 rounded-[1.6rem] border border-[#817d58]/12 bg-white p-3 shadow-sm"
               >
                 <Filtros />
               </motion.div>
@@ -365,18 +396,19 @@ export default function TerrenosPage() {
           </AnimatePresence>
         </div>
 
-        {/* Grid */}
+        {/* Resultados */}
         {cargando ? (
-          <div className="rounded-2xl border border-[#99B5D2]/20 bg-white p-10 text-center text-[#426C8E] shadow-sm">
+          <div className="rounded-[1.8rem] border border-[#817d58]/12 bg-white p-10 text-center text-[#817d58] shadow-sm">
             Cargando terrenos...
           </div>
         ) : terrenosFiltrados.length === 0 ? (
-          <div className="rounded-2xl border border-[#99B5D2]/20 bg-white p-10 text-center shadow-sm">
-            <h3 className="text-lg font-semibold text-[#003554]">
+          <div className="rounded-[1.8rem] border border-[#817d58]/12 bg-white p-10 text-center shadow-sm">
+            <h3 className="text-lg font-semibold text-[#22341c]">
               No se encontraron resultados
             </h3>
-            <p className="mt-2 text-sm text-[#426C8E]">
-              Ajusta tu búsqueda o cambia los filtros.
+            <p className="mt-2 text-sm text-[#817d58]">
+              Ajusta tu búsqueda o cambia los filtros para descubrir más
+              terrenos disponibles.
             </p>
           </div>
         ) : (
@@ -391,6 +423,9 @@ export default function TerrenosPage() {
                 terreno.ubicacion ||
                 "Ubicación no definida";
 
+              const tipoVisible =
+                terreno.uso_suelo || terreno.tipo || "Terreno";
+
               return (
                 <motion.article
                   key={terreno.id}
@@ -398,53 +433,53 @@ export default function TerrenosPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.28, delay: index * 0.02 }}
                   whileHover={{ y: -4 }}
-                  className="group overflow-hidden rounded-[1.4rem] bg-white transition"
+                  className="group overflow-hidden rounded-[1.7rem] border border-[#817d58]/10 bg-white shadow-sm transition hover:shadow-lg"
                 >
-                  <div className="relative overflow-hidden rounded-[1.35rem]">
+                  <div className="relative overflow-hidden">
                     <img
                       src={imagen}
                       alt={terreno.titulo}
                       loading="lazy"
-                      className="h-52 w-full object-cover transition duration-700 ease-out group-hover:scale-[1.04]"
+                      className="h-56 w-full object-cover transition duration-700 ease-out group-hover:scale-[1.04]"
                     />
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#22341c]/45 via-transparent to-transparent" />
 
                     <div className="absolute right-3 top-3 z-10">
                       <FavoriteButton
                         terrenoId={terreno.id}
                         size={18}
-                        redirectTo="/terrenos"
-                        className="bg-white/85 backdrop-blur-md shadow-sm"
-                        activeClassName="bg-white/90 text-[#003554] border-[#99B5D2]/30"
-                        inactiveClassName="bg-white/85 text-[#003554] border-[#99B5D2]/20"
+                        className="bg-white/90 shadow-sm backdrop-blur-md"
+                        activeClassName="bg-white text-[#22341c] border-[#9f885c]/30"
+                        inactiveClassName="bg-white/90 text-[#22341c] border-[#817d58]/15"
                       />
                     </div>
 
-                    <span className="absolute bottom-3 left-3 rounded-full bg-[#003554] px-3 py-1 text-[11px] font-medium text-white">
-                      {terreno.uso_suelo || terreno.tipo || "Terreno"}
+                    <span className="absolute bottom-3 left-3 rounded-full bg-[#22341c] px-3 py-1 text-[11px] font-medium text-white shadow-sm">
+                      {tipoVisible}
                     </span>
                   </div>
 
-                  <div className="px-2 pb-2 pt-3">
-                    <h2 className="line-clamp-1 text-[1.05rem] font-semibold text-[#003554]">
+                  <div className="p-4">
+                    <h2 className="line-clamp-1 text-[1.05rem] font-semibold text-[#22341c]">
                       {terreno.titulo}
                     </h2>
 
-                    <p className="mt-1.5 flex items-center gap-1.5 text-sm text-[#426C8E]">
+                    <p className="mt-1.5 flex items-center gap-1.5 text-sm text-[#817d58]">
                       <MapPin size={14} />
                       <span className="line-clamp-1">{ubicacionVisible}</span>
                     </p>
 
-                    <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">
+                    <p className="mt-3 line-clamp-2 text-sm leading-6 text-[#6c6655]">
                       {terreno.descripcion || "Sin descripción disponible."}
                     </p>
 
-                    <div className="mt-3 flex items-end justify-between gap-3">
+                    <div className="mt-4 flex items-end justify-between gap-3">
                       <div>
-                        <p className="text-[1.7rem] font-bold tracking-tight text-[#003554]">
+                        <p className="text-[1.65rem] font-bold tracking-tight text-[#22341c]">
                           ${Number(terreno.precio || 0).toLocaleString("es-MX")}
                         </p>
-                        <p className="mt-0.5 text-xs text-slate-500">
+                        <p className="mt-0.5 text-xs text-[#9f885c]">
                           {terreno.area_m2
                             ? `${Math.round(terreno.area_m2)} m²`
                             : "Área no disponible"}
@@ -452,10 +487,10 @@ export default function TerrenosPage() {
                       </div>
                     </div>
 
-                    <div className="mt-3">
+                    <div className="mt-4">
                       <Link
                         href={`/terrenos/${terreno.id}`}
-                        className="inline-flex items-center gap-2 text-sm font-semibold text-[#003554] transition hover:text-[#426C8E]"
+                        className="inline-flex items-center gap-2 rounded-xl bg-[#f7f6f1] px-3 py-2 text-sm font-semibold text-[#22341c] transition hover:bg-[#ece8dd]"
                       >
                         Ver detalle
                         <ArrowRight size={16} />

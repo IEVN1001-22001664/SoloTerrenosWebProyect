@@ -246,7 +246,7 @@ exports.sendMensaje = async (req, res) => {
         ? conversacion.vendedor_id
         : conversacion.comprador_id;
 
-    await client.query(
+    const notificacionResult = await client.query(
       `
       INSERT INTO notificaciones
       (
@@ -259,6 +259,7 @@ exports.sendMensaje = async (req, res) => {
         metadata
       )
       VALUES ($1,$2,$3,$4,$5,$6,$7)
+      RETURNING *
       `,
       [
         destinatarioId,
@@ -288,6 +289,7 @@ exports.sendMensaje = async (req, res) => {
     await client.query("COMMIT");
 
     const remitente = remitenteResult.rows[0] || {};
+    const notificacion = notificacionResult.rows[0] || {};
 
     const mensajePayload = {
       id: mensajeResult.rows[0].id,
@@ -300,14 +302,30 @@ exports.sendMensaje = async (req, res) => {
       apellido: remitente.apellido || "",
     };
 
+    const notificacionPayload = {
+      id: notificacion.id,
+      tipo: notificacion.tipo,
+      titulo: notificacion.titulo,
+      mensaje: notificacion.mensaje,
+      leida: notificacion.leida,
+      referencia_id: notificacion.referencia_id,
+      referencia_tipo: notificacion.referencia_tipo,
+      metadata: notificacion.metadata,
+      creado_en: notificacion.creado_en,
+    };
+
     try {
       const io = getIO();
 
       io.to(`user_${destinatarioId}`).emit("nuevo_mensaje", mensajePayload);
-
       io.to(`conv_${Number(id)}`).emit("nuevo_mensaje", mensajePayload);
+
+      io.to(`user_${destinatarioId}`).emit(
+        "nueva_notificacion",
+        notificacionPayload
+      );
     } catch (socketError) {
-      console.error("Error emitiendo socket nuevo_mensaje:", socketError);
+      console.error("Error emitiendo eventos socket:", socketError);
     }
 
     res.status(201).json({

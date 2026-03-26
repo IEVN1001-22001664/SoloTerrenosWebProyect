@@ -80,7 +80,7 @@ function getArea(poligono) {
 
 
 // =============================
-// Obtener terrenos públicos (MAPA)
+// Obtener terrenos públicos 
 // =============================
 
 exports.getPublicos = async (req, res) => {
@@ -135,6 +135,118 @@ exports.getAllPublic = async (req, res) => {
   }
 };
 
+// =============================
+// Terrenos públicos para mapa
+// =============================
+exports.getTerrenosMapa = async (req, res) => {
+  try {
+    console.log("🔥🔥🔥 GET TERRENOS MAPA ACTIVADO 🔥🔥🔥");
+    console.log("======================================");
+    console.log("ENTRÓ A getTerrenosMapa");
+    console.log("Query params recibidos:", req.query);
+
+    const {
+      north,
+      south,
+      east,
+      west,
+      q,
+      tipo,
+      precioMin,
+      precioMax,
+    } = req.query;
+
+    if (!north || !south || !east || !west) {
+      console.log("Faltan bounds obligatorios");
+      return res.status(400).json({
+        message: "Bounds requeridos",
+      });
+    }
+
+    const values = [south, north, west, east];
+
+    let filters = `
+      t.estado = 'aprobado'
+      AND t.centro_lat IS NOT NULL
+      AND t.centro_lng IS NOT NULL
+      AND t.centro_lat BETWEEN $1 AND $2
+      AND t.centro_lng BETWEEN $3 AND $4
+    `;
+
+    let idx = 5;
+
+    if (q) {
+      filters += ` AND (t.titulo ILIKE $${idx} OR t.ubicacion ILIKE $${idx})`;
+      values.push(`%${q}%`);
+      idx++;
+    }
+
+    if (tipo) {
+      filters += ` AND t.tipo = $${idx}`;
+      values.push(tipo);
+      idx++;
+    }
+
+    if (precioMin) {
+      filters += ` AND t.precio >= $${idx}`;
+      values.push(precioMin);
+      idx++;
+    }
+
+    if (precioMax) {
+      filters += ` AND t.precio <= $${idx}`;
+      values.push(precioMax);
+      idx++;
+    }
+
+    const query = `
+      SELECT
+        t.*
+      FROM terrenos t
+      WHERE ${filters}
+      ORDER BY t.creado_en DESC
+      LIMIT 200
+    `;
+
+    console.log("Bounds procesados:", { north, south, east, west });
+    console.log("Filtros procesados:", { q, tipo, precioMin, precioMax });
+    console.log("Values enviados a SQL:", values);
+    console.log("SQL final:", query);
+
+    const result = await pool.query(query, values);
+
+    console.log("Consulta ejecutada correctamente");
+    console.log("Terrenos encontrados:", result.rows.length);
+
+    if (result.rows.length > 0) {
+      console.log("Primer terreno encontrado:", result.rows[0]);
+    } else {
+      console.log("No se encontraron terrenos para esos bounds/filtros");
+    }
+
+    console.log("Saliendo de getTerrenosMapa con éxito");
+    console.log("======================================");
+
+    res.json(result.rows);
+  } catch (error) {
+    console.log("======================================");
+    console.error("ERROR EN getTerrenosMapa");
+    console.error("Mensaje:", error.message);
+    console.error("Código:", error.code);
+    console.error("Detalle:", error.detail);
+    console.error("Hint:", error.hint);
+    console.error("Where:", error.where);
+    console.error("Stack:", error.stack);
+    console.log("======================================");
+
+    res.status(500).json({
+      message: "Error obteniendo terrenos del mapa",
+      error: error.message,
+      code: error.code || null,
+      detail: error.detail || null,
+    });
+  }
+};
 
 // =============================
 // Obtener todos los terrenos ADMIN
