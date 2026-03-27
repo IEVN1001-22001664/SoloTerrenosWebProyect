@@ -63,17 +63,40 @@ function getPerimeter(coords: number[][]) {
 /* ===================================== */
 /* CALCULAR ÁREA                         */
 /* ===================================== */
+function projectToMeters(coords: number[][]) {
+  if (!Array.isArray(coords) || coords.length === 0) return [];
+
+  const lat0 =
+    coords.reduce((acc, [lat]) => acc + Number(lat), 0) / coords.length;
+
+  const lng0 =
+    coords.reduce((acc, [, lng]) => acc + Number(lng), 0) / coords.length;
+
+  const latFactor = 110540;
+  const lngFactor = 111320 * Math.cos((lat0 * Math.PI) / 180);
+
+  return coords.map(([lat, lng]) => {
+    const y = (Number(lat) - lat0) * latFactor;
+    const x = (Number(lng) - lng0) * lngFactor;
+
+    return [x, y];
+  });
+}
+
 function getArea(coords: number[][]) {
+  if (!Array.isArray(coords) || coords.length < 3) return 0;
+
+  const points = projectToMeters(coords);
   let area = 0;
 
-  for (let i = 0; i < coords.length; i++) {
-    const [x1, y1] = coords[i];
-    const [x2, y2] = coords[(i + 1) % coords.length];
+  for (let i = 0; i < points.length; i++) {
+    const [x1, y1] = points[i];
+    const [x2, y2] = points[(i + 1) % points.length];
 
     area += x1 * y2 - x2 * y1;
   }
 
-  return Math.abs(area / 2) * 111139 * 111139;
+  return Math.abs(area / 2);
 }
 
 interface Props {

@@ -5,35 +5,31 @@ const pool = require("../db");
 // =============================
 
 function getCenter(poligono) {
-//console.log("POLIGONO RECIBIDO:", poligono);
-//console.log("TIPO:", typeof poligono);
-
   let lat = 0;
   let lng = 0;
 
-  poligono.forEach(p => {
-    lat += p[0];
-    lng += p[1];
+  poligono.forEach((p) => {
+    lat += Number(p[0]);
+    lng += Number(p[1]);
   });
 
   return {
     lat: lat / poligono.length,
-    lng: lng / poligono.length
+    lng: lng / poligono.length,
   };
 }
 
 function projectToMeters(poligono) {
   if (!Array.isArray(poligono) || poligono.length === 0) return [];
 
-  // Punto de referencia para proyección local
   const lat0 =
     poligono.reduce((acc, [lat]) => acc + Number(lat), 0) / poligono.length;
 
   const lng0 =
     poligono.reduce((acc, [, lng]) => acc + Number(lng), 0) / poligono.length;
 
-  const latFactor = 110540; // metros por grado de latitud
-  const lngFactor = 111320 * Math.cos((lat0 * Math.PI) / 180); // metros por grado de longitud ajustado por latitud
+  const latFactor = 110540;
+  const lngFactor = 111320 * Math.cos((lat0 * Math.PI) / 180);
 
   return poligono.map(([lat, lng]) => {
     const y = (Number(lat) - lat0) * latFactor;
@@ -75,9 +71,8 @@ function getArea(poligono) {
     area += x1 * y2 - x2 * y1;
   }
 
-  return Math.abs(area / 2); // m²
+  return Math.abs(area / 2);
 }
-
 
 // =============================
 // Obtener terrenos públicos 
@@ -242,6 +237,227 @@ exports.getTerrenosMapa = async (req, res) => {
 
 
 // =============================
+// FILTRO Y SEARCHBAR PUBLICA PRINCIPAL
+// =============================
+
+exports.searchSuggestions = async (req, res) => {
+  const { q } = req.query;
+
+  if (!q || !q.trim()) {
+    return res.json({ results: [] });
+  }
+
+  try {
+    const search = q.trim();
+
+    const result = await pool.query(
+      `
+      SELECT
+        id,
+        titulo,
+        ubicacion,
+        municipio,
+        estado_region,
+        tipo,
+        uso_suelo,
+        area_m2,
+        precio,
+        (
+          ts_rank(
+            search_vector,
+            websearch_to_tsquery('spanish', $1)
+          )
+          +
+          CASE WHEN titulo ILIKE $2 THEN 0.40 ELSE 0 END
+          +
+          CASE WHEN ubicacion ILIKE $2 THEN 0.25 ELSE 0 END
+          +
+          CASE WHEN municipio ILIKE $2 THEN 0.25 ELSE 0 END
+          +
+          CASE WHEN estado_region ILIKE $2 THEN 0.20 ELSE 0 END
+          +
+          CASE WHEN tipo ILIKE $2 THEN 0.20 ELSE 0 END
+          +
+          CASE WHEN uso_suelo ILIKE $2 THEN 0.20 ELSE 0 END
+        ) AS score
+      FROM terrenos
+      WHERE
+        (estado = 'aprobado' OR estado IS NULL OR estado = '')
+        AND (
+          search_vector @@ websearch_to_tsquery('spanish', $1)
+          OR titulo ILIKE $2
+          OR descripcion ILIKE $2
+          OR ubicacion ILIKE $2
+          OR municipio ILIKE $2
+          OR estado_region ILIKE $2
+          OR tipo ILIKE $2
+          OR uso_suelo ILIKE $2
+        )
+      ORDER BY score DESC, id DESC
+      LIMIT 8
+      `,
+      [search, `%${search}%`]
+    );
+
+    return res.json({ results: result.rows });
+  } catch (error) {
+    console.error("Error en searchSuggestions:", error);
+    return res.status(500).json({ error: "Error obteniendo sugerencias" });
+  }
+};
+
+exports.searchTerrenos = async (req, res) => {
+  const {
+    q = "",
+    ubicacion = "todas",
+    tipo = "todos",
+    precio = "todos",
+    area = "todos",
+    orden = "recientes",
+  } = req.query;
+
+  try {
+    const values = [];
+    const conditions = [`(estado = 'aprobado' OR estado IS NULL OR estado = '')`];
+    let orderClause = `id DESC`;
+
+    if (q.trim()) {
+      values.push(q.trim());
+      const searchIndex = values.length;
+
+      values.push(`%${q.trim()}%`);
+      const likeIndex = values.length;
+
+      conditions.push(`
+        (
+          search_vector @@ websearch_to_tsquery('spanish', $${searchIndex})
+          OR titulo ILIKE $${likeIndex}
+          OR descripcion ILIKE $${likeIndex}
+          OR ubicacion ILIKE $${likeIndex}
+          OR municipio ILIKE $${likeIndex}
+          OR estado_region ILIKE $${likeIndex}
+          OR tipo ILIKE $${likeIndex}
+          OR uso_suelo ILIKE $${likeIndex}
+        )
+      `);
+
+      if (orden === "recientes") {
+        orderClause = `
+          (
+            ts_rank(search_vector, websearch_to_tsquery('spanish', $${searchIndex}))
+            +
+            CASE WHEN titulo ILIKE $${likeIndex} THEN 0.40 ELSE 0 END
+            +
+            CASE WHEN ubicacion ILIKE $${likeIndex} THEN 0.25 ELSE 0 END
+            +
+            CASE WHEN municipio ILIKE $${likeIndex} THEN 0.25 ELSE 0 END
+            +
+            CASE WHEN estado_region ILIKE $${likeIndex} THEN 0.20 ELSE 0 END
+            +
+            CASE WHEN tipo ILIKE $${likeIndex} THEN 0.20 ELSE 0 END
+            +
+            CASE WHEN uso_suelo ILIKE $${likeIndex} THEN 0.20 ELSE 0 END
+          ) DESC,
+          id DESC
+        `;
+      }
+    }
+
+    if (ubicacion !== "todas") {
+      values.push(ubicacion);
+      const idx = values.length;
+      conditions.push(`
+        (
+          municipio ILIKE $${idx}
+          OR ubicacion ILIKE $${idx}
+          OR estado_region ILIKE $${idx}
+        )
+      `);
+    }
+
+    if (tipo !== "todos") {
+      values.push(tipo);
+      const idx = values.length;
+      conditions.push(`
+        (
+          tipo ILIKE $${idx}
+          OR uso_suelo ILIKE $${idx}
+        )
+      `);
+    }
+
+    if (precio !== "todos") {
+      switch (precio) {
+        case "0-500000":
+          conditions.push(`precio <= 500000`);
+          break;
+        case "500000-1000000":
+          conditions.push(`precio > 500000 AND precio <= 1000000`);
+          break;
+        case "1000000-3000000":
+          conditions.push(`precio > 1000000 AND precio <= 3000000`);
+          break;
+        case "3000000+":
+          conditions.push(`precio > 3000000`);
+          break;
+      }
+    }
+
+    if (area !== "todos") {
+      switch (area) {
+        case "0-250":
+          conditions.push(`area_m2 > 0 AND area_m2 <= 250`);
+          break;
+        case "250-500":
+          conditions.push(`area_m2 > 250 AND area_m2 <= 500`);
+          break;
+        case "500-1000":
+          conditions.push(`area_m2 > 500 AND area_m2 <= 1000`);
+          break;
+        case "1000+":
+          conditions.push(`area_m2 > 1000`);
+          break;
+      }
+    }
+
+    if (orden === "precio_menor") {
+      orderClause = `precio ASC NULLS LAST, id DESC`;
+    } else if (orden === "precio_mayor") {
+      orderClause = `precio DESC NULLS LAST, id DESC`;
+    } else if (orden === "titulo_az") {
+      orderClause = `titulo ASC NULLS LAST, id DESC`;
+    } else if (orden === "titulo_za") {
+      orderClause = `titulo DESC NULLS LAST, id DESC`;
+    }
+
+    const sql = `
+      SELECT
+        id,
+        titulo,
+        descripcion,
+        precio,
+        ubicacion,
+        municipio,
+        estado_region,
+        tipo,
+        uso_suelo,
+        area_m2,
+        estado
+      FROM terrenos
+      WHERE ${conditions.join(" AND ")}
+      ORDER BY ${orderClause}
+    `;
+
+    const result = await pool.query(sql, values);
+
+    return res.json(result.rows);
+  } catch (error) {
+    console.error("Error en searchTerrenos:", error);
+    return res.status(500).json({ error: "Error realizando búsqueda" });
+  }
+};
+
+// =============================
 // Obtener todos los terrenos ADMIN
 // =============================
 
@@ -350,8 +566,8 @@ exports.createTerreno = async (req, res) => {
     // =================================
 
     const centro = getCenter(poligono);
-    const area = getArea(poligono);
-    const perimetro = getPerimeter(poligono);
+    const area_m2 = getArea(poligono);
+    const perimetro_m = getPerimeter(poligono);
 
     // =================================
     // VERIFICAR AUTOAPROBADO
@@ -369,7 +585,6 @@ exports.createTerreno = async (req, res) => {
     // =================================
     // INSERTAR TERRENO
     // =================================
-
     const result = await pool.query(
       `
       INSERT INTO terrenos 
@@ -419,8 +634,8 @@ exports.createTerreno = async (req, res) => {
         estadoFinal,
         centro.lat,
         centro.lng,
-        area,
-        perimetro,
+        area_m2,
+        perimetro_m,
         estado_region,
         municipio,
         colonia,
@@ -438,6 +653,7 @@ exports.createTerreno = async (req, res) => {
     );
 
     res.status(201).json(result.rows[0]);
+    console.log("RESPUESTA DE BD:", result.rows[0]);
 
   } catch (error) {
     console.error("Error creando terreno:", error);

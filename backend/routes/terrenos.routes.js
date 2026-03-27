@@ -24,6 +24,12 @@ router.get("/mapa", terrenosController.getTerrenosMapa);
 // Obtener todos los terrenos aprobados
 router.get("/", terrenosController.getAllPublic);
 
+// Sugerencias del buscador principal
+router.get("/search-suggestions", terrenosController.searchSuggestions);
+
+// Resultados completos con PostgreSQL FTS
+router.get("/search", terrenosController.searchTerrenos);
+
 
 // ======================================================
 // OBTENER TERRENOS DEL COLABORADOR AUTENTICADO
