@@ -60,7 +60,7 @@ interface TerrenoImagen {
 
 async function getTerreno(id: string): Promise<Terreno | null> {
   try {
-    const res = await fetch(`http://localhost:5000/api/terrenos/${id}`, {
+    const res = await fetch(`http://localhost:5000/api/terrenos/id/${id}`, {
       cache: "no-store",
     });
 

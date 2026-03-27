@@ -24,3 +24,29 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Popup custom de terrenos en mapa */
+.custom-terreno-popup .leaflet-popup-content-wrapper {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+.custom-terreno-popup .leaflet-popup-content {
+  margin: 0;
+  width: auto !important;
+}
+
+.custom-terreno-popup .leaflet-popup-tip-container {
+  margin-top: -1px;
+}
+
+.custom-terreno-popup .leaflet-popup-tip {
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.custom-terreno-popup .leaflet-popup-close-button {
+  display: none;
+}

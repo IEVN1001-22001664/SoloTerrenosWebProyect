@@ -1,3 +1,7 @@
+export type PolygonPoint =
+  | [number, number]
+  | { lat: number; lng: number };
+
 export interface TerrenoMapa {
   id: number;
   titulo: string;
@@ -8,10 +12,11 @@ export interface TerrenoMapa {
   estado_region?: string;
   tipo?: string;
   uso_suelo?: string;
-  area_m2?: number;
+  area_m2?: number | string;
   imagen_principal?: string | null;
   centro_lat: number;
   centro_lng: number;
+  poligono?: PolygonPoint[] | unknown;
   estado?: string;
 }
 

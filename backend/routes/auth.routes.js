@@ -13,7 +13,7 @@ router.put("/change-password",verifyToken,authController.changePassword);
 router.post("/upload-profile-photo",verifyToken,upload.single("foto"),authController.uploadProfilePhoto);
 
 router.post("/logout", (req, res) => {
-  res.clearCookie("token");
+res.clearCookie("token");
   res.json({ message: "Logout exitoso" });
 });
 

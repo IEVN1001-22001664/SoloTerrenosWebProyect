@@ -6,7 +6,9 @@ import { TerrenoMapa } from "./types";
 interface Props {
   terreno: TerrenoMapa;
   isSelected: boolean;
+  isHovered: boolean;
   onSelect: (id: number) => void;
+  onHoverChange: (hovering: boolean) => void;
 }
 
 function formatPrice(value: number) {
@@ -20,14 +22,20 @@ function formatPrice(value: number) {
 export default function TerrenoMapCard({
   terreno,
   isSelected,
+  isHovered,
   onSelect,
+  onHoverChange,
 }: Props) {
+  const isActive = isSelected || isHovered;
+
   return (
     <article
+      onMouseEnter={() => onHoverChange(true)}
+      onMouseLeave={() => onHoverChange(false)}
       onClick={() => onSelect(terreno.id)}
       className={`cursor-pointer rounded-2xl border bg-white p-3 shadow-sm transition ${
-        isSelected
-          ? "border-[#828d4b] ring-2 ring-[#828d4b]/20"
+        isActive
+          ? "border-[#828d4b] ring-2 ring-[#828d4b]/20 shadow-md"
           : "border-[#e6e0d3] hover:border-[#9f885c] hover:shadow-md"
       }`}
     >
@@ -55,33 +63,19 @@ export default function TerrenoMapCard({
             {terreno.titulo}
           </h2>
 
-          <div className="mt-1 flex items-center gap-1 text-xs text-[#817d58]">
-            <MapPin size={13} />
-            <span className="line-clamp-1">
+          <div className="mt-1 flex items-start gap-1 text-xs text-[#817d58]">
+            <MapPin size={13} className="mt-0.5 shrink-0" />
+            <span className="line-clamp-2">
               {terreno.ubicacion || "Ubicación no disponible"}
             </span>
           </div>
 
-          <div className="mt-2 flex flex-wrap gap-2 text-xs">
-            {terreno.tipo && (
-              <span className="rounded-full bg-[#f1eee7] px-2 py-1 text-[#22341c]">
-                {terreno.tipo}
-              </span>
-            )}
-
-            {typeof terreno.area_m2 === "number" && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#edf1e5] px-2 py-1 text-[#22341c]">
-                <LandPlot size={12} />
-                {Math.round(terreno.area_m2)} m²
-              </span>
-            )}
-
-            {terreno.estado_region && (
-              <span className="rounded-full bg-[#f7f4ec] px-2 py-1 text-[#817d58]">
-                {terreno.estado_region}
-              </span>
-            )}
-          </div>
+          {typeof terreno.area_m2 === "number" && (
+            <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-[#edf1e5] px-2 py-1 text-xs text-[#22341c]">
+              <LandPlot size={12} />
+              {Math.round(terreno.area_m2)} m²
+            </div>
+          )}
         </div>
       </div>
     </article>

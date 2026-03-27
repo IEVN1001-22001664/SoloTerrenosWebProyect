@@ -135,16 +135,12 @@ exports.getAllPublic = async (req, res) => {
   }
 };
 
+
 // =============================
 // Terrenos públicos para mapa
 // =============================
 exports.getTerrenosMapa = async (req, res) => {
   try {
-    console.log("🔥🔥🔥 GET TERRENOS MAPA ACTIVADO 🔥🔥🔥");
-    console.log("======================================");
-    console.log("ENTRÓ A getTerrenosMapa");
-    console.log("Query params recibidos:", req.query);
-
     const {
       north,
       south,
@@ -157,10 +153,7 @@ exports.getTerrenosMapa = async (req, res) => {
     } = req.query;
 
     if (!north || !south || !east || !west) {
-      console.log("Faltan bounds obligatorios");
-      return res.status(400).json({
-        message: "Bounds requeridos",
-      });
+      return res.status(400).json({ message: "Bounds requeridos" });
     }
 
     const values = [south, north, west, east];
@@ -176,17 +169,27 @@ exports.getTerrenosMapa = async (req, res) => {
     let idx = 5;
 
     if (q) {
-      filters += ` AND (t.titulo ILIKE $${idx} OR t.ubicacion ILIKE $${idx})`;
+      filters += `
+        AND (
+          t.titulo ILIKE $${idx}
+          OR t.ubicacion ILIKE $${idx}
+          OR t.estado_region ILIKE $${idx}
+          OR t.municipio ILIKE $${idx}
+          OR t.colonia ILIKE $${idx}
+          OR t.direccion ILIKE $${idx}
+          OR t.tipo ILIKE $${idx}
+          OR t.uso_suelo ILIKE $${idx}
+        )
+      `;
       values.push(`%${q}%`);
       idx++;
     }
 
     if (tipo) {
-      filters += ` AND t.tipo = $${idx}`;
-      values.push(tipo);
+      filters += ` AND t.tipo ILIKE $${idx}`;
+      values.push(`%${tipo}%`);
       idx++;
     }
-
     if (precioMin) {
       filters += ` AND t.precio >= $${idx}`;
       values.push(precioMin);
@@ -201,52 +204,42 @@ exports.getTerrenosMapa = async (req, res) => {
 
     const query = `
       SELECT
-        t.*
+        t.*,
+        img.url AS imagen_principal
       FROM terrenos t
+      LEFT JOIN LATERAL (
+        SELECT ti.url
+        FROM terreno_imagenes ti
+        WHERE ti.terreno_id = t.id
+        ORDER BY ti.orden ASC, ti.id ASC
+        LIMIT 1
+      ) img ON true
       WHERE ${filters}
       ORDER BY t.creado_en DESC
       LIMIT 200
     `;
 
-    console.log("Bounds procesados:", { north, south, east, west });
-    console.log("Filtros procesados:", { q, tipo, precioMin, precioMax });
-    console.log("Values enviados a SQL:", values);
-    console.log("SQL final:", query);
-
     const result = await pool.query(query, values);
 
-    console.log("Consulta ejecutada correctamente");
-    console.log("Terrenos encontrados:", result.rows.length);
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
 
-    if (result.rows.length > 0) {
-      console.log("Primer terreno encontrado:", result.rows[0]);
-    } else {
-      console.log("No se encontraron terrenos para esos bounds/filtros");
-    }
+    const terrenos = result.rows.map((terreno) => ({
+      ...terreno,
+      imagen_principal: terreno.imagen_principal
+        ? `${baseUrl}${terreno.imagen_principal}`
+        : null,
+    }));
 
-    console.log("Saliendo de getTerrenosMapa con éxito");
-    console.log("======================================");
-
-    res.json(result.rows);
+    res.json(terrenos);
   } catch (error) {
-    console.log("======================================");
-    console.error("ERROR EN getTerrenosMapa");
-    console.error("Mensaje:", error.message);
-    console.error("Código:", error.code);
-    console.error("Detalle:", error.detail);
-    console.error("Hint:", error.hint);
-    console.error("Where:", error.where);
-    console.error("Stack:", error.stack);
-    console.log("======================================");
-
+    console.error("Error obteniendo terrenos del mapa:", error);
     res.status(500).json({
       message: "Error obteniendo terrenos del mapa",
       error: error.message,
-      code: error.code || null,
-      detail: error.detail || null,
     });
   }
 };
+
 
 // =============================
 // Obtener todos los terrenos ADMIN

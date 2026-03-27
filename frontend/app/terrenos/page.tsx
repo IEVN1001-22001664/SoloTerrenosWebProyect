@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -30,17 +31,36 @@ interface Terreno {
 
 const API_URL = "http://localhost:5000";
 
+function normalizeText(value?: string) {
+  return (value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
 export default function TerrenosPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [terrenos, setTerrenos] = useState<Terreno[]>([]);
   const [cargando, setCargando] = useState(true);
   const [mostrarFiltrosMobile, setMostrarFiltrosMobile] = useState(false);
 
-  const [busqueda, setBusqueda] = useState("");
-  const [filtroUbicacion, setFiltroUbicacion] = useState("todas");
-  const [filtroTipo, setFiltroTipo] = useState("todos");
-  const [filtroPrecio, setFiltroPrecio] = useState("todos");
-  const [filtroTamano, setFiltroTamano] = useState("todos");
-  const [orden, setOrden] = useState("recientes");
+  const [busqueda, setBusqueda] = useState(searchParams.get("q") || "");
+  const [filtroUbicacion, setFiltroUbicacion] = useState(
+    searchParams.get("ubicacion") || "todas"
+  );
+  const [filtroTipo, setFiltroTipo] = useState(
+    searchParams.get("tipo") || "todos"
+  );
+  const [filtroPrecio, setFiltroPrecio] = useState(
+    searchParams.get("precio") || "todos"
+  );
+  const [filtroTamano, setFiltroTamano] = useState(
+    searchParams.get("area") || "todos"
+  );
+  const [orden, setOrden] = useState(searchParams.get("orden") || "recientes");
 
   useEffect(() => {
     const fetchTerrenos = async () => {
@@ -69,6 +89,44 @@ export default function TerrenosPage() {
     fetchTerrenos();
   }, []);
 
+  useEffect(() => {
+    const q = searchParams.get("q") || "";
+    const ubicacion = searchParams.get("ubicacion") || "todas";
+    const tipo = searchParams.get("tipo") || "todos";
+    const precio = searchParams.get("precio") || "todos";
+    const area = searchParams.get("area") || "todos";
+    const ordenUrl = searchParams.get("orden") || "recientes";
+
+    setBusqueda(q);
+    setFiltroUbicacion(ubicacion);
+    setFiltroTipo(tipo);
+    setFiltroPrecio(precio);
+    setFiltroTamano(area);
+    setOrden(ordenUrl);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+
+    if (busqueda.trim()) params.set("q", busqueda.trim());
+    if (filtroUbicacion !== "todas") params.set("ubicacion", filtroUbicacion);
+    if (filtroTipo !== "todos") params.set("tipo", filtroTipo);
+    if (filtroPrecio !== "todos") params.set("precio", filtroPrecio);
+    if (filtroTamano !== "todos") params.set("area", filtroTamano);
+    if (orden !== "recientes") params.set("orden", orden);
+
+    const query = params.toString();
+    router.replace(query ? `/terrenos?${query}` : "/terrenos", { scroll: false });
+  }, [
+    busqueda,
+    filtroUbicacion,
+    filtroTipo,
+    filtroPrecio,
+    filtroTamano,
+    orden,
+    router,
+  ]);
+
   const ubicacionesUnicas = useMemo(() => {
     const valores = terrenos
       .map((t) => t.municipio || t.ubicacion || t.estado_region || "")
@@ -89,15 +147,16 @@ export default function TerrenosPage() {
     let resultado = [...terrenos];
 
     if (busqueda.trim()) {
-      const texto = busqueda.toLowerCase().trim();
+      const texto = normalizeText(busqueda);
 
       resultado = resultado.filter((terreno) => {
-        const titulo = (terreno.titulo || "").toLowerCase();
-        const descripcion = (terreno.descripcion || "").toLowerCase();
-        const ubicacion = (terreno.ubicacion || "").toLowerCase();
-        const municipio = (terreno.municipio || "").toLowerCase();
-        const estadoRegion = (terreno.estado_region || "").toLowerCase();
-        const tipo = (terreno.uso_suelo || terreno.tipo || "").toLowerCase();
+        const titulo = normalizeText(terreno.titulo);
+        const descripcion = normalizeText(terreno.descripcion);
+        const ubicacion = normalizeText(terreno.ubicacion);
+        const municipio = normalizeText(terreno.municipio);
+        const estadoRegion = normalizeText(terreno.estado_region);
+        const tipo = normalizeText(terreno.tipo);
+        const usoSuelo = normalizeText(terreno.uso_suelo);
 
         return (
           titulo.includes(texto) ||
@@ -105,30 +164,31 @@ export default function TerrenosPage() {
           ubicacion.includes(texto) ||
           municipio.includes(texto) ||
           estadoRegion.includes(texto) ||
-          tipo.includes(texto)
+          tipo.includes(texto) ||
+          usoSuelo.includes(texto)
         );
       });
     }
 
     if (filtroUbicacion !== "todas") {
-      resultado = resultado.filter((terreno) => {
-        const valor = (
-          terreno.municipio ||
-          terreno.ubicacion ||
-          terreno.estado_region ||
-          ""
-        ).toLowerCase();
+      const ubicacionFiltro = normalizeText(filtroUbicacion);
 
-        return valor === filtroUbicacion.toLowerCase();
+      resultado = resultado.filter((terreno) => {
+        const valor = normalizeText(
+          terreno.municipio || terreno.ubicacion || terreno.estado_region || ""
+        );
+
+        return valor === ubicacionFiltro;
       });
     }
 
     if (filtroTipo !== "todos") {
-      resultado = resultado.filter(
-        (terreno) =>
-          (terreno.uso_suelo || terreno.tipo || "").toLowerCase() ===
-          filtroTipo.toLowerCase()
-      );
+      const tipoFiltro = normalizeText(filtroTipo);
+
+      resultado = resultado.filter((terreno) => {
+        const valor = normalizeText(terreno.uso_suelo || terreno.tipo || "");
+        return valor === tipoFiltro;
+      });
     }
 
     if (filtroPrecio !== "todos") {
@@ -288,7 +348,6 @@ export default function TerrenosPage() {
   return (
     <main className="min-h-screen bg-[#f7f6f1] px-4 pb-14 pt-20 md:px-6">
       <section className="mx-auto max-w-7xl">
-        {/* Encabezado */}
         <div className="mb-6 overflow-hidden rounded-[2rem] border border-[#817d58]/12 bg-white shadow-sm">
           <div className="bg-gradient-to-r from-[#22341c] via-[#2f4727] to-[#828d4b] px-6 py-8 text-white md:px-8 md:py-10">
             <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white/95">
@@ -319,7 +378,6 @@ export default function TerrenosPage() {
           </div>
         </div>
 
-        {/* Cabecera de filtros */}
         <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-sm text-[#817d58]">
@@ -341,7 +399,24 @@ export default function TerrenosPage() {
           )}
         </div>
 
-        {/* Toolbar desktop */}
+        <div className="mb-3 flex flex-wrap gap-2">
+          {busqueda.trim() && (
+            <span className="rounded-full bg-[#ece8dd] px-3 py-1 text-xs text-[#22341c]">
+              Búsqueda: {busqueda}
+            </span>
+          )}
+          {filtroTipo !== "todos" && (
+            <span className="rounded-full bg-[#ece8dd] px-3 py-1 text-xs text-[#22341c]">
+              Tipo: {filtroTipo}
+            </span>
+          )}
+          {filtroUbicacion !== "todas" && (
+            <span className="rounded-full bg-[#ece8dd] px-3 py-1 text-xs text-[#22341c]">
+              Ubicación: {filtroUbicacion}
+            </span>
+          )}
+        </div>
+
         <div className="mb-8 hidden rounded-[1.75rem] border border-[#817d58]/12 bg-white p-3 shadow-sm md:block">
           <div className="grid grid-cols-[1.6fr_repeat(5,minmax(0,1fr))] gap-3">
             <div className="flex h-11 items-center gap-2 rounded-xl border border-[#817d58]/18 bg-[#f7f6f1] px-3">
@@ -359,7 +434,6 @@ export default function TerrenosPage() {
           </div>
         </div>
 
-        {/* Toolbar mobile */}
         <div className="mb-6 space-y-3 md:hidden">
           <div className="flex items-center gap-3 rounded-[1.6rem] border border-[#817d58]/12 bg-white p-3 shadow-sm">
             <div className="flex h-11 flex-1 items-center gap-2 rounded-xl border border-[#817d58]/18 bg-[#f7f6f1] px-3">
@@ -396,7 +470,6 @@ export default function TerrenosPage() {
           </AnimatePresence>
         </div>
 
-        {/* Resultados */}
         {cargando ? (
           <div className="rounded-[1.8rem] border border-[#817d58]/12 bg-white p-10 text-center text-[#817d58] shadow-sm">
             Cargando terrenos...

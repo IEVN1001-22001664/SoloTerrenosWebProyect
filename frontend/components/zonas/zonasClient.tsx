@@ -42,6 +42,8 @@ export default function ZonasClient() {
   const [terrenos, setTerrenos] = useState<TerrenoMapa[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [hoveredId, setHoveredId] = useState<number | null>(null);
+  const [openPopupId, setOpenPopupId] = useState<number | null>(null);
   const [focusRequest, setFocusRequest] = useState<FocusRequest>(null);
 
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
@@ -102,21 +104,10 @@ export default function ZonasClient() {
         west: String(bounds.west),
       });
 
-      if (filtrosNormalizados.q) {
-        params.append("q", filtrosNormalizados.q);
-      }
-
-      if (filtrosNormalizados.tipo) {
-        params.append("tipo", filtrosNormalizados.tipo);
-      }
-
-      if (filtrosNormalizados.precioMin) {
-        params.append("precioMin", filtrosNormalizados.precioMin);
-      }
-
-      if (filtrosNormalizados.precioMax) {
-        params.append("precioMax", filtrosNormalizados.precioMax);
-      }
+      if (filtrosNormalizados.q) params.append("q", filtrosNormalizados.q);
+      if (filtrosNormalizados.tipo) params.append("tipo", filtrosNormalizados.tipo);
+      if (filtrosNormalizados.precioMin) params.append("precioMin", filtrosNormalizados.precioMin);
+      if (filtrosNormalizados.precioMax) params.append("precioMax", filtrosNormalizados.precioMax);
 
       const res = await fetch(`${API_URL}?${params.toString()}`);
       const rawText = await res.text();
@@ -138,11 +129,17 @@ export default function ZonasClient() {
         }
         return data[0].id;
       });
-    } catch (error) {
+
+      setOpenPopupId((prev) => {
+        if (!prev) return null;
+        return data.some((t) => t.id === prev) ? prev : null;
+      });
+    } catch {
       if (requestId !== requestIdRef.current) return;
 
       setTerrenos([]);
       setSelectedId(null);
+      setOpenPopupId(null);
       setErrorMapa("Ocurrió un error al cargar los terrenos del mapa.");
     } finally {
       if (requestId === requestIdRef.current) {
@@ -193,9 +190,7 @@ export default function ZonasClient() {
       return;
     }
 
-    if (lastFetchKeyRef.current === currentKey) {
-      return;
-    }
+    if (lastFetchKeyRef.current === currentKey) return;
 
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current);
@@ -234,23 +229,23 @@ export default function ZonasClient() {
 
   const handleCardClick = (id: number) => {
     setSelectedId(id);
+    setOpenPopupId(null);
     setFocusRequest({
       id,
       source: "card",
       nonce: Date.now(),
     });
-
     ensureCardVisible(id);
   };
 
   const handleMarkerClick = (id: number) => {
     setSelectedId(id);
+    setOpenPopupId(id);
     setFocusRequest({
       id,
       source: "marker",
       nonce: Date.now(),
     });
-
     ensureCardVisible(id);
   };
 
@@ -266,95 +261,105 @@ export default function ZonasClient() {
   };
 
   const handleBoundsChange = useCallback((bounds: MapBounds) => {
-    if (areBoundsEqual(currentBoundsRef.current, bounds)) {
-      return;
-    }
+    if (areBoundsEqual(currentBoundsRef.current, bounds)) return;
 
     currentBoundsRef.current = bounds;
     setCurrentBounds(bounds);
   }, []);
 
-  return (
-    <main className="h-[calc(100vh-64px)] overflow-hidden bg-[#f8f6f1]">
-      <ZonasFiltersBar
-        filtros={filtros}
-        setFiltros={setFiltros}
-        total={terrenos.length}
-        onBuscarZona={handleBuscarZona}
-        loading={loading}
-        hasPendingChanges={false}
-        onLimpiarFiltros={() =>
-          setFiltros({
-            q: "",
-            tipo: "",
-            precioMin: "",
-            precioMax: "",
-          })
-        }
-      />
+    return (
+    <main className="h-[calc(100vh-64px)] bg-[#f8f6f1]">
+      <div className="flex h-full min-h-0 flex-col">
+        <ZonasFiltersBar
+          filtros={filtros}
+          setFiltros={setFiltros}
+          total={terrenos.length}
+          onBuscarZona={handleBuscarZona}
+          loading={loading}
+          hasPendingChanges={false}
+          onLimpiarFiltros={() =>
+            setFiltros({
+              q: "",
+              tipo: "",
+              precioMin: "",
+              precioMax: "",
+            })
+          }
+        />
 
-      <section className="grid h-[calc(100%-108px)] grid-cols-1 lg:grid-cols-[420px_1fr]">
-        <aside className="h-full overflow-y-auto border-r border-[#ddd6c7] bg-[#fcfbf8]">
-          <div className="space-y-3 p-4">
-            {loading && (
-              <>
-                {Array.from({ length: 6 }).map((_, i) => (
+        <section className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[420px_1fr]">
+          <aside className="min-h-0 overflow-y-auto border-r border-[#ddd6c7] bg-[#fcfbf8]">
+            <div className="space-y-3 p-4">
+              {loading &&
+                Array.from({ length: 6 }).map((_, i) => (
                   <div
                     key={i}
                     className="h-32 animate-pulse rounded-2xl border border-[#e8e2d7] bg-white"
                   />
                 ))}
-              </>
-            )}
 
-            {errorMapa && (
-              <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                {errorMapa}
-              </div>
-            )}
-
-            {!loading && !errorMapa && terrenosOrdenados.length === 0 && (
-              <div className="rounded-2xl border border-dashed border-[#d8d0bf] bg-white p-6 text-center">
-                <h3 className="text-base font-semibold text-[#22341c]">
-                  No hay terrenos en esta vista
-                </h3>
-                <p className="mt-2 text-sm text-[#817d58]">
-                  Mueve el mapa o ajusta los filtros. Los resultados se actualizan
-                  automáticamente según la zona visible.
-                </p>
-              </div>
-            )}
-
-            {!loading &&
-              !errorMapa &&
-              terrenosOrdenados.map((terreno) => (
-                <div
-                  key={terreno.id}
-                  ref={(el) => {
-                    cardsRefs.current[terreno.id] = el;
-                  }}
-                >
-                  <TerrenoMapCard
-                    terreno={terreno}
-                    isSelected={selectedId === terreno.id}
-                    onSelect={handleCardClick}
-                  />
+              {errorMapa && (
+                <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                  {errorMapa}
                 </div>
-              ))}
-          </div>
-        </aside>
+              )}
 
-        <div className="h-full">
-          <ZonasMap
-            terrenos={terrenos}
-            selectedId={selectedId}
-            focusRequest={focusRequest}
-            onSelectTerreno={handleMarkerClick}
-            onBoundsChange={handleBoundsChange}
-            userLocation={userLocation}
-          />
-        </div>
-      </section>
+              {!loading && !errorMapa && terrenosOrdenados.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-[#d8d0bf] bg-white p-6 text-center">
+                  <h3 className="text-base font-semibold text-[#22341c]">
+                    No hay terrenos en esta vista
+                  </h3>
+                  <p className="mt-2 text-sm text-[#817d58]">
+                    Mueve el mapa o ajusta los filtros. Los resultados se actualizan
+                    automáticamente según la zona visible.
+                  </p>
+                </div>
+              )}
+
+              {!loading &&
+                !errorMapa &&
+                terrenosOrdenados.map((terreno) => (
+                  <div
+                    key={terreno.id}
+                    ref={(el) => {
+                      cardsRefs.current[terreno.id] = el;
+                    }}
+                  >
+                    <TerrenoMapCard
+                      terreno={terreno}
+                      isSelected={selectedId === terreno.id}
+                      isHovered={hoveredId === terreno.id}
+                      onSelect={handleCardClick}
+                      onHoverChange={(hovering: boolean) => {
+                        if (hovering) {
+                          setHoveredId(terreno.id);
+                        } else {
+                          setHoveredId((prev) =>
+                            prev === terreno.id ? null : prev
+                          );
+                        }
+                      }}
+                    />
+                  </div>
+                ))}
+            </div>
+          </aside>
+
+          <div className="min-h-0">
+            <ZonasMap
+              terrenos={terrenos}
+              selectedId={selectedId}
+              hoveredId={hoveredId}
+              openPopupId={openPopupId}
+              focusRequest={focusRequest}
+              onSelectTerreno={handleMarkerClick}
+              onBoundsChange={handleBoundsChange}
+              onClosePopup={() => setOpenPopupId(null)}
+              userLocation={userLocation}
+            />
+          </div>
+        </section>
+      </div>
     </main>
   );
 }
