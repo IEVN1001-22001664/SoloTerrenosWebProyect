@@ -1,19 +1,18 @@
 "use client";
 
-import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { MapPin, Ruler, Tag } from "lucide-react";
-import FavoriteButton from "./favoriteButton";
+import FavoriteButton from "@/components/terrenos/favoriteButton";
 
 interface Props {
-  id?: string;
+  id: number;
   title: string;
   location: string;
   price: string;
   area: string;
   image: string;
   status: string;
-  isFavorite?: boolean;
 }
 
 export default function TerrainCard({
@@ -24,70 +23,76 @@ export default function TerrainCard({
   area,
   image,
   status,
-  isFavorite = false,
 }: Props) {
+  const router = useRouter();
+
+  const goToDetail = () => {
+    router.push(`/terrenos/${id}`);
+  };
+
   return (
-    <motion.div
+    <motion.article
       whileHover={{ y: -6 }}
       transition={{ duration: 0.25 }}
-      className="bg-white rounded-xl overflow-hidden shadow-md cursor-pointer group"
+      onClick={goToDetail}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          goToDetail();
+        }
+      }}
+      tabIndex={0}
+      role="button"
+      className="group cursor-pointer overflow-hidden rounded-xl bg-white shadow-md outline-none focus:ring-2 focus:ring-[#828d4b]/40"
     >
-      {/* Imagen */}
-
       <div className="relative h-[220px] overflow-hidden">
+        <div
+          className="absolute right-3 top-3 z-20"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          <FavoriteButton
+            terrenoId={id}
+            size={18}
+            className="bg-white/90 shadow-sm backdrop-blur-md"
+            activeClassName="bg-white text-[#22341c] border-[#9f885c]/30"
+            inactiveClassName="bg-white/90 text-[#22341c] border-[#817d58]/15"
+          />
+        </div>
 
-        {/* ❤️ FAVORITO */}
-        <FavoriteButton
-          terrainId={id}
-          initialFavorite={isFavorite}
-        />
-
-        <Image
+        <img
           src={image}
           alt={title}
-          fill
-          className="object-cover transition-transform duration-700 group-hover:scale-110"
+          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
 
-        {/* Status badge */}
-
-        <span className="absolute top-4 left-4 bg-[#5C7C3A] text-white text-xs px-3 py-1 rounded-full">
+        <span className="absolute left-4 top-4 rounded-full bg-[#5C7C3A] px-3 py-1 text-xs text-white">
           {status}
         </span>
       </div>
 
-      {/* Contenido */}
-
       <div className="p-5">
-
-        <h3 className="font-semibold text-lg text-[#1F3D2B] mb-2">
+        <h3 className="mb-2 text-lg font-semibold text-[#1F3D2B]">
           {title}
         </h3>
 
-        <div className="flex items-center gap-2 text-gray-600 text-sm mb-2">
+        <div className="mb-2 flex items-center gap-2 text-sm text-gray-600">
           <MapPin size={16} />
-          {location}
+          <span className="line-clamp-1">{location}</span>
         </div>
 
-        <div className="flex items-center gap-2 text-gray-600 text-sm mb-3">
+        <div className="mb-3 flex items-center gap-2 text-sm text-gray-600">
           <Ruler size={16} />
-          {area}
+          <span>{area}</span>
         </div>
 
-        <div className="flex items-center justify-between">
-
-          <div className="flex items-center gap-2 text-[#5C7C3A] font-semibold">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 font-semibold text-[#5C7C3A]">
             <Tag size={16} />
-            {price}
+            <span>{price}</span>
           </div>
-
-          <button className="text-sm text-[#5C7C3A] hover:underline">
-            Ver más
-          </button>
-
         </div>
-
       </div>
-    </motion.div>
+    </motion.article>
   );
 }

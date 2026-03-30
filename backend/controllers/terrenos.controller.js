@@ -458,6 +458,112 @@ exports.searchTerrenos = async (req, res) => {
 };
 
 // =============================
+// OBTENER TERRENOS DESTACADOS
+// =============================
+exports.getDestacados = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        t.*,
+        (
+          SELECT ti.url
+          FROM terreno_imagenes ti
+          WHERE ti.terreno_id = t.id
+          ORDER BY ti.id ASC
+          LIMIT 1
+        ) AS imagen_principal
+      FROM terrenos t
+      WHERE
+        t.estado = 'aprobado'
+        AND t.destacado = true
+        AND (
+          t.destacado_hasta IS NULL
+          OR t.destacado_hasta >= NOW()
+        )
+      ORDER BY
+        t.orden_destacado ASC NULLS LAST,
+        t.id DESC
+      LIMIT 12
+    `);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error obteniendo terrenos destacados:", error);
+    res.status(500).json({ message: "Error al obtener terrenos destacados" });
+  }
+};
+
+// =============================
+// MARCAR TERRENO COMO DESTACADO
+// =============================
+exports.destacarTerreno = async (req, res) => {
+  const { id } = req.params;
+  const { orden_destacado = null, destacado_hasta = null } = req.body;
+
+  try {
+    const result = await pool.query(
+      `
+      UPDATE terrenos
+      SET
+        destacado = true,
+        orden_destacado = $2,
+        destacado_desde = NOW(),
+        destacado_hasta = $3
+      WHERE id = $1
+      RETURNING *
+      `,
+      [id, orden_destacado, destacado_hasta]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Terreno no encontrado" });
+    }
+
+    res.json({
+      message: "Terreno marcado como destacado correctamente",
+      terreno: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Error destacando terreno:", error);
+    res.status(500).json({ message: "Error al destacar terreno" });
+  }
+};
+
+// =============================
+// QUITAR DESTACADO DE TERRENO
+// =============================
+exports.quitarDestacadoTerreno = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      `
+      UPDATE terrenos
+      SET
+        destacado = false,
+        orden_destacado = NULL,
+        destacado_desde = NULL,
+        destacado_hasta = NULL
+      WHERE id = $1
+      RETURNING *
+      `,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Terreno no encontrado" });
+    }
+
+    res.json({
+      message: "Terreno retirado de destacados correctamente",
+      terreno: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Error quitando destacado:", error);
+    res.status(500).json({ message: "Error al quitar destacado" });
+  }
+};
+// =============================
 // Obtener todos los terrenos ADMIN
 // =============================
 

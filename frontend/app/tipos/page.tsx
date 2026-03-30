@@ -278,9 +278,10 @@ export default function TiposPage() {
 
           {tipos.map((tipo, index) => (
             <motion.article
+              id={tipo.id}
               key={tipo.id}
               variants={item}
-              className="group overflow-hidden rounded-[30px] border border-[#e5dfd1] bg-white shadow-[0_16px_45px_rgba(34,52,28,0.06)] transition hover:-translate-y-1 hover:shadow-[0_22px_55px_rgba(34,52,28,0.12)]"
+              className="group overflow-hidden rounded-[30px] border border-[#e5dfd1] bg-white shadow-[0_16px_45px_rgba(34,52,28,0.06)] transition hover:-translate-y-1 hover:shadow-[0_22px_55px_rgba(34,52,28,0.12)] scroll-mt-28"
             >
               <div className="grid lg:grid-cols-[1.05fr_1fr]">
                 <div className="relative min-h-[280px] overflow-hidden">

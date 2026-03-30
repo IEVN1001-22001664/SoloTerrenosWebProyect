@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import ZonasFiltersBar from "./zonasFiltersBar";
 import TerrenoMapCard from "./terrenoMapCard";
@@ -20,6 +21,225 @@ const ZonasMap = dynamic(() => import("./zonasMap"), {
 
 const API_URL = "http://localhost:5000/api/terrenos/mapa";
 const MAP_DEBOUNCE_MS = 700;
+type RegionConfig = {
+  slug: string;
+  nombre: string;
+  center: [number, number];
+  zoom: number;
+  bounds?: MapBounds;
+  estados: string[];
+  municipios: string[];
+};
+
+const REGION_CONFIGS: Record<string, RegionConfig> = {
+  bajio: {
+    slug: "bajio",
+    nombre: "Bajío",
+    center: [21.019, -101.257],
+    zoom: 8,
+    bounds: {
+      north: 22.7,
+      south: 20.0,
+      east: -99.5,
+      west: -102.8,
+    },
+    estados: [
+      "guanajuato",
+      "queretaro",
+      "querétaro",
+      "aguascalientes",
+      "san luis potosi",
+      "san luis potosí",
+    ],
+    municipios: [
+      "leon",
+      "león",
+      "irapuato",
+      "celaya",
+      "salamanca",
+      "guanajuato",
+      "san miguel de allende",
+      "queretaro",
+      "querétaro",
+      "san juan del rio",
+      "san juan del río",
+      "aguascalientes",
+      "san luis potosi",
+      "san luis potosí",
+    ],
+  },
+
+  norte: {
+    slug: "norte",
+    nombre: "Norte",
+    center: [27.5, -103.5],
+    zoom: 6,
+    bounds: {
+      north: 32.9,
+      south: 24.0,
+      east: -96.5,
+      west: -117.5,
+    },
+    estados: [
+      "nuevo leon",
+      "nuevo león",
+      "chihuahua",
+      "coahuila",
+      "sonora",
+      "baja california",
+      "tamaulipas",
+    ],
+    municipios: [
+      "monterrey",
+      "san nicolas",
+      "san nicolás",
+      "apodaca",
+      "chihuahua",
+      "ciudad juarez",
+      "ciudad juárez",
+      "saltillo",
+      "torreon",
+      "torreón",
+      "hermosillo",
+      "tijuana",
+      "reynosa",
+      "matamoros",
+      "nuevo laredo",
+    ],
+  },
+
+  occidente: {
+    slug: "occidente",
+    nombre: "Occidente",
+    center: [20.67, -103.35],
+    zoom: 7,
+    bounds: {
+      north: 23.4,
+      south: 17.8,
+      east: -101.0,
+      west: -106.8,
+    },
+    estados: [
+      "jalisco",
+      "nayarit",
+      "colima",
+      "michoacan",
+      "michoacán",
+    ],
+    municipios: [
+      "guadalajara",
+      "zapopan",
+      "tlajomulco",
+      "puerto vallarta",
+      "tepic",
+      "colima",
+      "manzanillo",
+      "morelia",
+      "zamora",
+    ],
+  },
+
+  sureste: {
+    slug: "sureste",
+    nombre: "Sureste",
+    center: [19.2, -89.6],
+    zoom: 6,
+    bounds: {
+      north: 22.8,
+      south: 14.5,
+      east: -86.5,
+      west: -94.8,
+    },
+    estados: [
+      "yucatan",
+      "yucatán",
+      "quintana roo",
+      "campeche",
+      "tabasco",
+      "chiapas",
+    ],
+    municipios: [
+      "merida",
+      "mérida",
+      "cancun",
+      "cancún",
+      "playa del carmen",
+      "tulum",
+      "campeche",
+      "villahermosa",
+      "tuxtla gutierrez",
+      "tuxtla gutiérrez",
+    ],
+  },
+
+  centro: {
+    slug: "centro",
+    nombre: "Centro",
+    center: [19.43, -99.13],
+    zoom: 8,
+    bounds: {
+      north: 21.2,
+      south: 18.1,
+      east: -97.0,
+      west: -100.9,
+    },
+    estados: [
+      "ciudad de mexico",
+      "ciudad de méxico",
+      "cdmx",
+      "estado de mexico",
+      "estado de méxico",
+      "morelos",
+      "puebla",
+      "hidalgo",
+      "tlaxcala",
+    ],
+    municipios: [
+      "ciudad de mexico",
+      "ciudad de méxico",
+      "cdmx",
+      "toluca",
+      "metepec",
+      "cuernavaca",
+      "puebla",
+      "pachuca",
+      "tlaxcala",
+    ],
+  },
+
+  frontera: {
+    slug: "frontera",
+    nombre: "Frontera",
+    center: [29.0, -107.0],
+    zoom: 6,
+    bounds: {
+      north: 32.8,
+      south: 25.3,
+      east: -97.0,
+      west: -117.2,
+    },
+    estados: [
+      "baja california",
+      "sonora",
+      "chihuahua",
+      "coahuila",
+      "nuevo leon",
+      "nuevo león",
+      "tamaulipas",
+    ],
+    municipios: [
+      "tijuana",
+      "mexicali",
+      "nogales",
+      "ciudad juarez",
+      "ciudad juárez",
+      "piedras negras",
+      "reynosa",
+      "matamoros",
+      "nuevo laredo",
+    ],
+  },
+};
 
 type FocusRequest = {
   id: number;
@@ -36,6 +256,42 @@ function areBoundsEqual(a: MapBounds | null, b: MapBounds | null) {
     Math.abs(a.east - b.east) < 0.00001 &&
     Math.abs(a.west - b.west) < 0.00001
   );
+}
+
+function normalizeText(value?: string | null) {
+  return (value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+function terrenoMatchesRegion(
+  terreno: TerrenoMapa,
+  region: RegionConfig | null
+) {
+  if (!region) return true;
+
+  const estado = normalizeText((terreno as any).estado_region);
+  const municipio = normalizeText((terreno as any).municipio);
+  const ubicacion = normalizeText((terreno as any).ubicacion);
+
+  const estadosPermitidos = region.estados.map(normalizeText);
+  const municipiosPermitidos = region.municipios.map(normalizeText);
+
+  const matchEstado = estado
+    ? estadosPermitidos.includes(estado)
+    : false;
+
+  const matchMunicipio = municipio
+    ? municipiosPermitidos.includes(municipio)
+    : false;
+
+  const matchUbicacion = ubicacion
+    ? estadosPermitidos.some((e) => ubicacion.includes(e)) ||
+      municipiosPermitidos.some((m) => ubicacion.includes(m))
+    : false;
+
+  return matchEstado || matchMunicipio || matchUbicacion;
 }
 
 export default function ZonasClient() {
@@ -148,6 +404,22 @@ export default function ZonasClient() {
     }
   };
 
+  const searchParams = useSearchParams();
+  const regionParam = searchParams.get("region");
+  const activeRegion = regionParam ? REGION_CONFIGS[regionParam] ?? null : null;
+
+    useEffect(() => {
+    if (regionParam) {
+      console.log("REGION DETECTADA:", regionParam);
+    }
+  }, [regionParam]);
+  useEffect(() => {
+  if (activeRegion) {
+    console.log("CONFIG REGION ACTIVA:", activeRegion);
+  }
+}, [activeRegion]);
+
+
   useEffect(() => {
     mountedRef.current = true;
 
@@ -210,7 +482,13 @@ export default function ZonasClient() {
     };
   }, [currentBounds, filtros]);
 
-  const terrenosOrdenados = useMemo(() => terrenos, [terrenos]);
+  const terrenosOrdenados = useMemo(() => {
+    if (!activeRegion) return terrenos;
+
+    return terrenos.filter((terreno) =>
+      terrenoMatchesRegion(terreno, activeRegion)
+    );
+  }, [terrenos, activeRegion]);
 
   const ensureCardVisible = (id: number) => {
     const node = cardsRefs.current[id];
@@ -273,7 +551,7 @@ export default function ZonasClient() {
         <ZonasFiltersBar
           filtros={filtros}
           setFiltros={setFiltros}
-          total={terrenos.length}
+          total={terrenosOrdenados.length}
           onBuscarZona={handleBuscarZona}
           loading={loading}
           hasPendingChanges={false}
@@ -347,7 +625,7 @@ export default function ZonasClient() {
 
           <div className="min-h-0">
             <ZonasMap
-              terrenos={terrenos}
+              terrenos={terrenosOrdenados}
               selectedId={selectedId}
               hoveredId={hoveredId}
               openPopupId={openPopupId}
@@ -356,6 +634,9 @@ export default function ZonasClient() {
               onBoundsChange={handleBoundsChange}
               onClosePopup={() => setOpenPopupId(null)}
               userLocation={userLocation}
+              initialCenter={activeRegion?.center ?? null}
+              initialZoom={activeRegion?.zoom ?? null}
+              initialBounds={activeRegion?.bounds ?? null}
             />
           </div>
         </section>

@@ -35,6 +35,9 @@ interface Props {
   onBoundsChange: (bounds: MapBounds) => void;
   onClosePopup: () => void;
   userLocation: [number, number] | null;
+  initialCenter?: [number, number] | null;
+  initialZoom?: number | null;
+  initialBounds?: MapBounds | null;
 }
 
 const MEXICO_CENTER: [number, number] = [23.6345, -102.5528];
@@ -322,6 +325,37 @@ function ActivePolygonOverlay({
   );
 }
 
+
+function InitialRegionFit({
+  initialBounds,
+}: {
+  initialBounds?: MapBounds | null;
+}) {
+  const map = useMap();
+  const didApplyRef = useRef(false);
+
+  useEffect(() => {
+    if (!initialBounds) return;
+    if (didApplyRef.current) return;
+
+    const bounds = L.latLngBounds(
+      [initialBounds.south, initialBounds.west],
+      [initialBounds.north, initialBounds.east]
+    );
+
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, {
+        padding: [30, 30],
+        maxZoom: 12,
+      });
+      didApplyRef.current = true;
+    }
+  }, [initialBounds, map]);
+
+  return null;
+}
+
+
 export default function ZonasMap({
   terrenos,
   selectedId,
@@ -332,12 +366,18 @@ export default function ZonasMap({
   onBoundsChange,
   onClosePopup,
   userLocation,
+  initialCenter = null,
+  initialZoom = null,
+  initialBounds = null,
 }: Props) {
+
   const markerRefs = useRef<Record<number, LeafletMarker | null>>({});
   const [currentZoom, setCurrentZoom] = useState<number>(MEXICO_ZOOM);
   const [activePolygonId, setActivePolygonId] = useState<number | null>(null);
 
   const isSatellite = Boolean(MAPBOX_TOKEN) && currentZoom >= 18;
+  const effectiveInitialCenter = initialCenter ?? MEXICO_CENTER;
+  const effectiveInitialZoom = initialZoom ?? MEXICO_ZOOM;
 
   // Si cambia el interés a otra tarjeta o marker, ocultamos polígono
   useEffect(() => {
@@ -368,8 +408,8 @@ export default function ZonasMap({
   return (
     <div className="relative h-full w-full">
       <MapContainer
-        center={MEXICO_CENTER}
-        zoom={MEXICO_ZOOM}
+        center={effectiveInitialCenter}
+        zoom={effectiveInitialZoom}
         scrollWheelZoom
         maxZoom={22}
         className="h-full w-full"
@@ -387,6 +427,7 @@ export default function ZonasMap({
 
         <DynamicBaseLayer onZoomChange={setCurrentZoom} />
         <InitialBoundsEmitter onBoundsChange={onBoundsChange} />
+        <InitialRegionFit initialBounds={initialBounds} />
         <MapEvents
           onBoundsChange={onBoundsChange}
           onClosePopup={onClosePopup}

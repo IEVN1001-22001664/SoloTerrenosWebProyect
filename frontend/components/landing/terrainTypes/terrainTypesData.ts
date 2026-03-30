@@ -1,47 +1,53 @@
 import {
   Factory,
   Store,
-  Building2,
+  Home,
   Trees,
-  TrendingUp,
-  Home
+  Layers3,
+  Building2,
 } from "lucide-react";
 
 export const terrainTypes = [
   {
     title: "Industriales",
-    description: "Parques industriales y naves",
+    description: "Naves, bodegas y logística",
     count: "450+ terrenos",
-    icon: Factory
+    icon: Factory,
+    slug: "industrial",
   },
   {
     title: "Comerciales",
-    description: "Plazas y locales comerciales",
+    description: "Plazas, locales y servicios",
     count: "380+ terrenos",
-    icon: Store
-  },
-  {
-    title: "Urbanos",
-    description: "Desarrollo y construcción",
-    count: "620+ terrenos",
-    icon: Building2
-  },
-  {
-    title: "Rurales",
-    description: "Agrícolas y ganaderos",
-    count: "290+ terrenos",
-    icon: Trees
-  },
-  {
-    title: "Inversión",
-    description: "Alto potencial de plusvalía",
-    count: "180+ terrenos",
-    icon: TrendingUp
+    icon: Store,
+    slug: "comercial",
   },
   {
     title: "Habitacionales",
     description: "Residenciales y fraccionamientos",
     count: "540+ terrenos",
-    icon: Home
-  }
+    icon: Home,
+    slug: "habitacional",
+  },
+  {
+    title: "Agrícolas",
+    description: "Cultivo, producción y uso rural",
+    count: "290+ terrenos",
+    icon: Trees,
+    slug: "agricola",
+  },
+  {
+    title: "Mixtos",
+    description: "Usos combinados y flexibles",
+    count: "180+ terrenos",
+    icon: Layers3,
+    slug: "mixto",
+  },
+  {
+    title: "Desarrollo",
+    description: "Potencial urbano y escalable",
+    count: "620+ terrenos",
+    icon: Building2,
+    slug: "mixto",
+  },
 ];

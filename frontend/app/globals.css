@@ -50,3 +50,6 @@ body {
 .custom-terreno-popup .leaflet-popup-close-button {
   display: none;
 }
+html {
+  scroll-behavior: smooth;
+}
