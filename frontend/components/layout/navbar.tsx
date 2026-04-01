@@ -765,7 +765,7 @@ export default function Navbar() {
                           </Link>
 
                           <Link
-                            href="/colaborador/membresia"
+                            href="/suscripciones"
                             onClick={() => setOpenProfileMenu(false)}
                             className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#22341c] transition hover:bg-[#f7f6f1]"
                           >

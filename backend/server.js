@@ -36,12 +36,20 @@ const leadsRoutes = require("./routes/leads.routes");
 const conversacionesRoutes = require("./routes/conversaciones.routes");
 const notificacionesRoutes = require("./routes/notificaciones.routes");
 const favoritosRoutes = require("./routes/favoritos.routes");
-
+const suscripcionesRoutes = require("./routes/suscripciones.routes");
+const stripeCheckoutRoutes = require("./routes/stripeCheckout.routes");
+const stripeWebhookRoutes = require("./routes/stripeWebhook.routes");
 // ======================================================
 // CREACIÓN DE LA APLICACIÓN EXPRESS
 // ======================================================
 
 const app = express();
+
+// ======================================================
+// WEBHOOK DE STRIPE (DEBE IR ANTES DE express.json())
+// ======================================================
+
+app.use("/api/stripe/webhook", stripeWebhookRoutes);
 
 // ======================================================
 // MIDDLEWARE PARA LEER JSON
@@ -111,6 +119,14 @@ app.use("/api/favoritos", favoritosRoutes);
 
 //Mapa de Zonas
 app.use("/api/terrenos", terrenosRoutes);
+
+//suscripciones
+app.use("/api/suscripciones", suscripcionesRoutes);
+
+//Checkout Service
+app.use("/api/stripe", stripeCheckoutRoutes);
+
+
 
 // ======================================================
 // ARCHIVOS ESTÁTICOS

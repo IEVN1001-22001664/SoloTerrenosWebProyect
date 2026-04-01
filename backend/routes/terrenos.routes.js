@@ -9,6 +9,7 @@ const terrenosController = require("../controllers/terrenos.controller");
 
 const authMiddleware = require("../middleware/auth.middleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
+const { puedePublicarTerreno } = require("../middleware/suscripcion.middleware");
 
 
 // ======================================================
@@ -72,6 +73,7 @@ router.post(
   "/",
   authMiddleware,
   roleMiddleware("colaborador", "admin"),
+  puedePublicarTerreno,
   terrenosController.createTerreno
 );
 

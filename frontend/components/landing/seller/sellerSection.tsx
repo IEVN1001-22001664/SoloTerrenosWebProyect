@@ -68,7 +68,7 @@ export default function SellerSection() {
               </button>
             </Link>
 
-            <Link href="/suscripciones">
+            <Link href="/planes">
               <button className="border border-white/30 hover:border-white px-6 py-3 rounded-lg font-medium transition">
                 Ver planes y precios
               </button>
