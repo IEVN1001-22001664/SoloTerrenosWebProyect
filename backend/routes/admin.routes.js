@@ -15,6 +15,13 @@ router.delete('/users/:id', authMiddleware, roleMiddleware('admin'), adminContro
 router.get("/colaboradores",authMiddleware,roleMiddleware("admin"),adminController.getColaboradores);
 router.put('/usuarios/:id/auto-aprobado', authMiddleware, roleMiddleware('admin'), adminController.updateAutoAprobado);
 
+router.get(
+  '/dashboard',
+  authMiddleware,
+  roleMiddleware('admin'),
+  adminController.getDashboardStats
+);
+
 /* ===========================
    PUBLICACIONES
 =========================== */

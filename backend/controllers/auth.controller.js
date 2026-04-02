@@ -104,6 +104,7 @@ const login = async (req, res) => {
       httpOnly: true,
       secure: false,
       sameSite: "lax",
+      path: "/",
       maxAge: rememberMe
         ? 7 * 24 * 60 * 60 * 1000
         : 24 * 60 * 60 * 1000,
@@ -123,6 +124,29 @@ const login = async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Error del servidor" });
+  }
+};
+
+/* ===========================
+   LOGOUT
+=========================== */
+const logout = async (req, res) => {
+  try {
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+
+    return res.status(200).json({
+      message: "Sesión cerrada correctamente",
+    });
+  } catch (error) {
+    console.error("Error en logout:", error);
+    return res.status(500).json({
+      message: "Error del servidor",
+    });
   }
 };
 
@@ -437,6 +461,7 @@ const uploadProfilePhoto = async (req, res) => {
 
 module.exports = {
   login,
+  logout,
   register,
   me,
   getProfile,

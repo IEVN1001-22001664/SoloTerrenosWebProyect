@@ -53,3 +53,32 @@ body {
 html {
   scroll-behavior: smooth;
 }
+
+
+:root {
+  --admin-bg: #f1f5f9;
+  --admin-surface: #ffffff;
+  --admin-surface-soft: #f8fafc;
+  --admin-border: #dbe3ee;
+
+  --admin-text: #0f172a;
+  --admin-text-soft: #64748b;
+
+  --admin-sidebar-bg: #0f172a;
+  --admin-sidebar-hover: #1e293b;
+  --admin-sidebar-active: #dbeafe;
+  --admin-sidebar-text: #e2e8f0;
+  --admin-sidebar-text-active: #0f172a;
+
+  --admin-topbar-bg: #0b4f6c;
+  --admin-topbar-logo-bg: #ffffff;
+
+  --admin-accent: #2563eb;
+  --admin-accent-2: #1d4ed8;
+  --admin-accent-soft: #dbeafe;
+  --admin-gold: #9f885c;
+  --admin-brand-dark: #22341c;
+
+  --admin-danger-soft: #fff1f2;
+  --admin-danger-text: #b42318;
+}

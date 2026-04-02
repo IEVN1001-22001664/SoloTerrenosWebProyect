@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import AsignarSuscripcionModal from "../admin/asignarSuscripcionModal";
 import {
   BadgeCheck,
   CalendarClock,
@@ -44,7 +46,11 @@ export default function SuscripcionesClient() {
   const [suscripcion, setSuscripcion] = useState<SuscripcionActual | null>(null);
   const [planes, setPlanes] = useState<Plan[]>([]);
   const [error, setError] = useState("");
+  const searchParams = useSearchParams();
+  const [openModal, setOpenModal] = useState(false);
 
+  const bloqueo = searchParams.get("bloqueo");
+  const motivoBloqueo = searchParams.get("motivo");
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
   useEffect(() => {
@@ -188,6 +194,22 @@ export default function SuscripcionesClient() {
             dentro de SoloTerrenos.
           </p>
         </div>
+
+        {bloqueo ? (
+          <div className="mb-6 rounded-2xl border border-[#ead5d5] bg-[#fff6f6] p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="mt-0.5 h-5 w-5 text-[#7a3d3d]" />
+              <div>
+                <p className="text-sm font-semibold text-[#7a3d3d]">
+                  Publicación bloqueada
+                </p>
+                <p className="mt-1 text-sm text-[#7a3d3d]">
+                  {motivoBloqueo || "Tu cuenta no puede publicar terrenos en este momento."}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         {error ? (
           <div className="mb-6 rounded-2xl border border-[#ead5d5] bg-[#fff6f6] p-4">

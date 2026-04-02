@@ -119,19 +119,6 @@ async function contarTerrenosQueConsumenCupo(usuarioId) {
  * Evalúa si el usuario puede publicar
  */
 async function evaluarPermisoPublicacion(usuarioId) {
-  const suscripcion = await getSuscripcionActualUsuario(usuarioId);
-
-  if (!suscripcion) {
-    return {
-      ok: false,
-      motivo: "No existe una suscripción activa asignada al usuario.",
-      codigo: "SIN_SUSCRIPCION",
-      suscripcion: null,
-      limiteTerrenos: null,
-      terrenosUsados: 0,
-    };
-  }
-
   const usuarioResult = await pool.query(
     `
     SELECT id, rol, puede_publicar, bloqueado_publicacion
@@ -143,12 +130,28 @@ async function evaluarPermisoPublicacion(usuarioId) {
   );
 
   const usuario = usuarioResult.rows[0];
+
   if (!usuario) {
     return {
       ok: false,
       motivo: "Usuario no encontrado.",
       codigo: "USUARIO_NO_ENCONTRADO",
-      suscripcion,
+      rol: null,
+      suscripcion: null,
+      limiteTerrenos: null,
+      terrenosUsados: 0,
+    };
+  }
+
+  const suscripcion = await getSuscripcionActualUsuario(usuarioId);
+
+  if (!suscripcion) {
+    return {
+      ok: false,
+      motivo: "No existe una suscripción activa asignada al usuario.",
+      codigo: "SIN_SUSCRIPCION",
+      rol: usuario.rol,
+      suscripcion: null,
       limiteTerrenos: null,
       terrenosUsados: 0,
     };
@@ -159,6 +162,7 @@ async function evaluarPermisoPublicacion(usuarioId) {
       ok: false,
       motivo: "El usuario está bloqueado manualmente para publicar.",
       codigo: "USUARIO_BLOQUEADO",
+      rol: usuario.rol,
       suscripcion,
       limiteTerrenos: null,
       terrenosUsados: 0,
@@ -170,6 +174,7 @@ async function evaluarPermisoPublicacion(usuarioId) {
       ok: false,
       motivo: "El usuario no tiene permisos de publicación activos.",
       codigo: "PUBLICACION_DESHABILITADA",
+      rol: usuario.rol,
       suscripcion,
       limiteTerrenos: null,
       terrenosUsados: 0,
@@ -182,6 +187,7 @@ async function evaluarPermisoPublicacion(usuarioId) {
       ok: false,
       motivo: `La suscripción no está habilitada para publicar. Estado actual: ${suscripcion.estado}`,
       codigo: "ESTADO_SUSCRIPCION_INVALIDO",
+      rol: usuario.rol,
       suscripcion,
       limiteTerrenos: null,
       terrenosUsados: 0,
@@ -194,6 +200,7 @@ async function evaluarPermisoPublicacion(usuarioId) {
       ok: false,
       motivo: "La suscripción ya venció.",
       codigo: "SUSCRIPCION_VENCIDA",
+      rol: usuario.rol,
       suscripcion,
       limiteTerrenos: null,
       terrenosUsados: 0,
@@ -211,8 +218,9 @@ async function evaluarPermisoPublicacion(usuarioId) {
   if (limiteTerrenos !== null && terrenosUsados >= limiteTerrenos) {
     return {
       ok: false,
-      motivo: `El plan ya alcanzó el límite de ${limiteTerrenos} terrenos.`,
+      motivo: `Llegaste al límite de ${limiteTerrenos} terrenos permitidos para tu plan.`,
       codigo: "LIMITE_ALCANZADO",
+      rol: usuario.rol,
       suscripcion,
       limiteTerrenos,
       terrenosUsados,
@@ -223,6 +231,7 @@ async function evaluarPermisoPublicacion(usuarioId) {
     ok: true,
     motivo: "Usuario habilitado para publicar.",
     codigo: "OK",
+    rol: usuario.rol,
     suscripcion,
     limiteTerrenos,
     terrenosUsados,

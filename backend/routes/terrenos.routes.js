@@ -7,6 +7,7 @@ const router = express.Router();
 
 const terrenosController = require("../controllers/terrenos.controller");
 
+const verifyToken = require("../middleware/verifyToken");
 const authMiddleware = require("../middleware/auth.middleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
 const { puedePublicarTerreno } = require("../middleware/suscripcion.middleware");
@@ -68,10 +69,18 @@ router.get(
 // ======================================================
 // CREAR TERRENO
 // ======================================================
-
-router.post(
+//Codigo anterior
+/*router.post(
   "/",
   authMiddleware,
+  roleMiddleware("colaborador", "admin"),
+  puedePublicarTerreno,
+  terrenosController.createTerreno
+);*/
+//Codigo nuevo
+router.post(
+  "/",
+  verifyToken,
   roleMiddleware("colaborador", "admin"),
   puedePublicarTerreno,
   terrenosController.createTerreno

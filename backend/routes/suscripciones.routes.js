@@ -10,7 +10,9 @@ const {
   reactivarSuscripcionAdmin,
   procesarVencidasAdmin,
   listarSuscripcionesPanelAdmin,
+  getCapacidadPublicacion,
 } = require("../controllers/suscripciones.controller");
+
 
 const verifyToken = require("../middleware/verifyToken");
 const roleMiddleware = require("../middleware/roleMiddleware");
@@ -24,6 +26,8 @@ router.get("/planes", getPlanesActivos);
 // USUARIO AUTENTICADO
 // ==============================
 router.get("/me", verifyToken, getMiSuscripcion);
+
+router.get("/capacidad-publicacion", verifyToken, getCapacidadPublicacion);
 
 // ==============================
 // ADMIN

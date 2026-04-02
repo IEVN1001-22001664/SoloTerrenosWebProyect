@@ -348,3 +348,82 @@ exports.eliminarDefinitivamente = async (req, res) => {
   }
 };
 
+exports.getDashboardStats = async (req, res) => {
+  try {
+    const [
+      usuariosResult,
+      colaboradoresResult,
+      terrenosActivosResult,
+      pendientesResult,
+      suscripcionesActivasResult,
+      suscripcionesPorVencerResult,
+      publicacionesRecientesResult,
+    ] = await Promise.all([
+      pool.query(`SELECT COUNT(*)::int AS total FROM usuarios`),
+
+      pool.query(`
+        SELECT COUNT(*)::int AS total
+        FROM usuarios
+        WHERE rol = 'colaborador'
+      `),
+
+      pool.query(`
+        SELECT COUNT(*)::int AS total
+        FROM terrenos
+        WHERE estado = 'aprobado'
+      `),
+
+      pool.query(`
+        SELECT COUNT(*)::int AS total
+        FROM terrenos
+        WHERE estado = 'pendiente'
+      `),
+
+      pool.query(`
+        SELECT COUNT(*)::int AS total
+        FROM suscripciones
+        WHERE estado IN ('activa', 'trialing')
+      `),
+
+      pool.query(`
+        SELECT COUNT(*)::int AS total
+        FROM suscripciones
+        WHERE estado IN ('activa', 'trialing')
+          AND fecha_fin IS NOT NULL
+          AND fecha_fin <= NOW() + INTERVAL '30 days'
+      `),
+
+      pool.query(`
+        SELECT
+          t.id,
+          t.titulo,
+          t.estado,
+          t.creado_en,
+          u.nombre,
+          u.apellido
+        FROM terrenos t
+        JOIN usuarios u ON u.id = t.usuario_id
+        WHERE t.estado != 'eliminado'
+        ORDER BY t.creado_en DESC
+        LIMIT 6
+      `),
+    ]);
+
+    return res.json({
+      resumen: {
+        usuariosTotales: usuariosResult.rows[0]?.total || 0,
+        colaboradores: colaboradoresResult.rows[0]?.total || 0,
+        terrenosActivos: terrenosActivosResult.rows[0]?.total || 0,
+        pendientesAprobacion: pendientesResult.rows[0]?.total || 0,
+        suscripcionesActivas: suscripcionesActivasResult.rows[0]?.total || 0,
+        suscripcionesPorVencer: suscripcionesPorVencerResult.rows[0]?.total || 0,
+      },
+      publicacionesRecientes: publicacionesRecientesResult.rows,
+    });
+  } catch (error) {
+    console.error("Error obteniendo dashboard admin:", error);
+    return res.status(500).json({
+      message: "Error obteniendo estadísticas del dashboard",
+    });
+  }
+};

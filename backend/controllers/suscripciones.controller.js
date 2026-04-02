@@ -6,6 +6,7 @@ const {
   reactivarSuscripcionActual,
   procesarSuscripcionesVencidas,
   listarSuscripcionesAdmin,
+  evaluarPermisoPublicacion,
 } = require("../services/suscripciones.service");
 const pool = require("../db");
 
@@ -208,6 +209,19 @@ async function listarSuscripcionesPanelAdmin(req, res) {
   }
 }
 
+async function getCapacidadPublicacion(req, res) {
+  try {
+    const usuarioId = req.user.id;
+    const evaluacion = await evaluarPermisoPublicacion(usuarioId);
+
+    return res.json(evaluacion);
+  } catch (error) {
+    console.error("Error obteniendo capacidad de publicación:", error);
+    return res.status(500).json({
+      message: "Error obteniendo capacidad de publicación.",
+    });
+  }
+}
 module.exports = {
   getMiSuscripcion,
   getPlanesActivos,
@@ -217,4 +231,5 @@ module.exports = {
   reactivarSuscripcionAdmin,
   procesarVencidasAdmin,
   listarSuscripcionesPanelAdmin,
+  getCapacidadPublicacion,
 };

@@ -2,22 +2,24 @@ const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/auth.controller");
 const verifyToken = require("../middleware/verifyToken");
-const upload = require("../middleware/uploadProfile")
+const upload = require("../middleware/uploadProfile");
 
 router.get("/me", verifyToken, authController.me);
 
-// NUEVOS ENDPOINTS DE PERFIL
+// PERFIL
 router.get("/profile", verifyToken, authController.getProfile);
 router.put("/profile", verifyToken, authController.updateProfile);
-router.put("/change-password",verifyToken,authController.changePassword);
-router.post("/upload-profile-photo",verifyToken,upload.single("foto"),authController.uploadProfilePhoto);
+router.put("/change-password", verifyToken, authController.changePassword);
+router.post(
+  "/upload-profile-photo",
+  verifyToken,
+  upload.single("foto"),
+  authController.uploadProfilePhoto
+);
 
-router.post("/logout", (req, res) => {
-res.clearCookie("token");
-  res.json({ message: "Logout exitoso" });
-});
-
+// AUTH
 router.post("/register", authController.register);
 router.post("/login", authController.login);
+router.post("/logout", authController.logout);
 
 module.exports = router;
