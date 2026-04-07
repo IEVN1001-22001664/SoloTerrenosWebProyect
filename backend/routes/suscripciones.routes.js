@@ -13,63 +13,61 @@ const {
   getCapacidadPublicacion,
 } = require("../controllers/suscripciones.controller");
 
-
-const verifyToken = require("../middleware/verifyToken");
+const authMiddleware = require("../middleware/auth.middleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
 
 // ==============================
 // PÚBLICAS
-// ==============================no me des 
+// ==============================
 router.get("/planes", getPlanesActivos);
 
 // ==============================
 // USUARIO AUTENTICADO
 // ==============================
-router.get("/me", verifyToken, getMiSuscripcion);
-
-router.get("/capacidad-publicacion", verifyToken, getCapacidadPublicacion);
+router.get("/me", authMiddleware, getMiSuscripcion);
+router.get("/capacidad-publicacion", authMiddleware, getCapacidadPublicacion);
 
 // ==============================
 // ADMIN
 // ==============================
 router.get(
   "/admin/listado",
-  verifyToken,
+  authMiddleware,
   roleMiddleware("admin"),
   listarSuscripcionesPanelAdmin
 );
 
 router.post(
   "/admin/asignar",
-  verifyToken,
+  authMiddleware,
   roleMiddleware("admin"),
   asignarSuscripcionAdmin
 );
 
 router.post(
   "/admin/suspender",
-  verifyToken,
+  authMiddleware,
   roleMiddleware("admin"),
   suspenderSuscripcionAdmin
 );
 
 router.post(
   "/admin/extender",
-  verifyToken,
+  authMiddleware,
   roleMiddleware("admin"),
   extenderSuscripcionAdmin
 );
 
 router.post(
   "/admin/reactivar",
-  verifyToken,
+  authMiddleware,
   roleMiddleware("admin"),
   reactivarSuscripcionAdmin
 );
 
 router.post(
   "/admin/procesar-vencidas",
-  verifyToken,
+  authMiddleware,
   roleMiddleware("admin"),
   procesarVencidasAdmin
 );

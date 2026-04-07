@@ -1,7 +1,6 @@
 const bcrypt = require("bcrypt");
-const pool = require("../db");
+const pool = require("../bd");
 
-// 🚫 Protección básica
 if (process.env.NODE_ENV === "production") {
   console.log("No se permite ejecutar seeds en producción");
   process.exit(1);
@@ -9,27 +8,83 @@ if (process.env.NODE_ENV === "production") {
 
 const usuarios = [
   {
-    nombre: "Admin",
-    apellido: "Principal",
-    fecha_nacimiento: "1990-01-01",
-    email: "admin@demo.com",
-    password: "admin123",
-    rol: "admin",
+    nombre: "Usuario1",
+    apellido: "Prueba",
+    fecha_nacimiento: "1995-01-10",
+    email: "usuario1@demo.com",
+    password: "Usuario123",
+    rol: "usuario",
   },
   {
-    nombre: "Carlos",
-    apellido: "Colaborador",
-    fecha_nacimiento: "1995-06-15",
-    email: "colab@demo.com",
-    password: "colab123",
-    rol: "colaborador",
+    nombre: "Usuario2",
+    apellido: "Prueba",
+    fecha_nacimiento: "1996-02-11",
+    email: "usuario2@demo.com",
+    password: "Usuario123",
+    rol: "usuario",
   },
   {
-    nombre: "Luis",
-    apellido: "Usuario",
-    fecha_nacimiento: "2000-03-10",
-    email: "user@demo.com",
-    password: "user123",
+    nombre: "Usuario3",
+    apellido: "Prueba",
+    fecha_nacimiento: "1997-03-12",
+    email: "usuario3@demo.com",
+    password: "Usuario123",
+    rol: "usuario",
+  },
+  {
+    nombre: "Usuario4",
+    apellido: "Prueba",
+    fecha_nacimiento: "1998-04-13",
+    email: "usuario4@demo.com",
+    password: "Usuario123",
+    rol: "usuario",
+  },
+  {
+    nombre: "Usuario5",
+    apellido: "Prueba",
+    fecha_nacimiento: "1999-05-14",
+    email: "usuario5@demo.com",
+    password: "Usuario123",
+    rol: "usuario",
+  },
+  {
+    nombre: "Usuario6",
+    apellido: "Prueba",
+    fecha_nacimiento: "1994-06-15",
+    email: "usuario6@demo.com",
+    password: "Usuario123",
+    rol: "usuario",
+  },
+  {
+    nombre: "Usuario7",
+    apellido: "Prueba",
+    fecha_nacimiento: "1993-07-16",
+    email: "usuario7@demo.com",
+    password: "Usuario123",
+    rol: "usuario",
+  },
+  {
+    nombre: "Usuario8",
+    apellido: "Prueba",
+    fecha_nacimiento: "1992-08-17",
+    email: "usuario8@demo.com",
+    password: "Usuario123",
+    rol: "usuario",
+  },
+  {
+    nombre: "Usuario9",
+    apellido: "Prueba",
+    fecha_nacimiento: "1991-09-18",
+    email: "usuario9@demo.com",
+    password: "Usuario123",
+    rol: "usuario",
+  },
+  {
+    nombre: "Usuario10",
+    apellido: "Prueba",
+    fecha_nacimiento: "1990-10-19",
+    email: "usuario10@demo.com",
+    password: "Usuario123",
     rol: "usuario",
   },
 ];
@@ -37,7 +92,6 @@ const usuarios = [
 const seedUsers = async () => {
   try {
     for (const usuario of usuarios) {
-      // 🔍 Verificar si ya existe
       const existe = await pool.query(
         "SELECT id FROM usuarios WHERE email = $1",
         [usuario.email]
@@ -48,14 +102,11 @@ const seedUsers = async () => {
         continue;
       }
 
-      // 🔐 Hash de contraseña
       const hashedPassword = await bcrypt.hash(usuario.password, 10);
 
-      // 💾 Insert
       await pool.query(
-        `INSERT INTO usuarios 
-        (nombre, apellido, fecha_nacimiento, email, password, rol)
-        VALUES ($1, $2, $3, $4, $5, $6)`,
+        `INSERT INTO usuarios (nombre, apellido, fecha_nacimiento, email, password, rol)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
         [
           usuario.nombre,
           usuario.apellido,
@@ -72,7 +123,6 @@ const seedUsers = async () => {
     console.log("Seed de usuarios completado");
     await pool.end();
     process.exit(0);
-
   } catch (error) {
     console.error("Error en seedUsers:", error);
     await pool.end();

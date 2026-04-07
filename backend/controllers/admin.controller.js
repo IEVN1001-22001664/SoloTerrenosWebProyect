@@ -7,14 +7,33 @@ const pool = require('../db');
 exports.getUsers = async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT id, nombre, email, rol, suscripcion_activa
-      FROM usuarios
-      ORDER BY id DESC
+      SELECT
+        u.id,
+        u.nombre,
+        u.apellido,
+        u.email,
+        u.rol,
+        u.puede_publicar,
+        u.bloqueado_publicacion,
+        u.colaborador_desde,
+        u.suscripcion_actual_id,
+        u.auto_aprobado,
+        s.estado AS suscripcion_estado,
+        s.origen AS suscripcion_origen,
+        s.fecha_inicio AS suscripcion_fecha_inicio,
+        s.fecha_fin AS suscripcion_fecha_fin,
+        p.codigo AS plan_codigo,
+        p.nombre AS plan_nombre
+      FROM usuarios u
+      LEFT JOIN suscripciones s ON s.id = u.suscripcion_actual_id
+      LEFT JOIN planes_suscripcion p ON p.id = s.plan_id
+      WHERE u.rol = 'usuario'
+      ORDER BY u.id DESC
     `);
 
     res.json(result.rows);
   } catch (error) {
-    console.error(error);
+    console.error("Error obteniendo usuarios:", error);
     res.status(500).json({ message: "Error obteniendo usuarios" });
   }
 };
@@ -72,22 +91,58 @@ exports.deleteUser = async (req, res) => {
 exports.getColaboradores = async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT 
+      SELECT
         u.id,
         u.nombre,
-        u.suscripcion_activa,
+        u.apellido,
+        u.email,
+        u.foto_perfil,
+        u.rol,
         u.auto_aprobado,
-        COUNT(t.id) AS publicaciones
+        u.puede_publicar,
+        u.bloqueado_publicacion,
+        u.colaborador_desde,
+        u.suscripcion_actual_id,
+
+        s.estado AS suscripcion_estado,
+        s.origen AS suscripcion_origen,
+        s.fecha_inicio AS suscripcion_fecha_inicio,
+        s.fecha_fin AS suscripcion_fecha_fin,
+        s.limite_terrenos_override,
+
+        p.codigo AS plan_codigo,
+        p.nombre AS plan_nombre,
+        p.limite_terrenos AS plan_limite_terrenos,
+
+        COUNT(t.id)::int AS publicaciones_totales,
+        COUNT(*) FILTER (WHERE t.estado = 'pendiente')::int AS publicaciones_pendientes,
+
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', t.id,
+              'titulo', t.titulo,
+              'estado', t.estado
+            )
+            ORDER BY t.creado_en DESC
+          ) FILTER (WHERE t.id IS NOT NULL),
+          '[]'::json
+        ) AS terrenos
       FROM usuarios u
+      LEFT JOIN suscripciones s ON s.id = u.suscripcion_actual_id
+      LEFT JOIN planes_suscripcion p ON p.id = s.plan_id
       LEFT JOIN terrenos t ON t.usuario_id = u.id
       WHERE u.rol = 'colaborador'
-      GROUP BY u.id
+      GROUP BY
+        u.id,
+        s.id,
+        p.id
       ORDER BY u.id DESC
     `);
 
     res.json(result.rows);
   } catch (error) {
-    console.error(error);
+    console.error("Error obteniendo colaboradores:", error);
     res.status(500).json({ message: "Error obteniendo colaboradores" });
   }
 };
@@ -424,6 +479,85 @@ exports.getDashboardStats = async (req, res) => {
     console.error("Error obteniendo dashboard admin:", error);
     return res.status(500).json({
       message: "Error obteniendo estadísticas del dashboard",
+    });
+  }
+};
+
+/* ===========================
+   COLABORADORES
+=========================== */
+
+exports.updateColaboradorLimite = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { limite_terrenos_override, ilimitado } = req.body;
+
+    const usuarioResult = await pool.query(
+      `
+      SELECT id, suscripcion_actual_id, rol
+      FROM usuarios
+      WHERE id = $1
+      LIMIT 1
+      `,
+      [id]
+    );
+
+    const usuario = usuarioResult.rows[0];
+
+    if (!usuario) {
+      return res.status(404).json({
+        message: "Colaborador no encontrado",
+      });
+    }
+
+    if (usuario.rol !== "colaborador") {
+      return res.status(400).json({
+        message: "El usuario no es colaborador",
+      });
+    }
+
+    if (!usuario.suscripcion_actual_id) {
+      return res.status(400).json({
+        message: "El colaborador no tiene una suscripción actual asignada",
+      });
+    }
+
+    let nuevoLimite = null;
+
+    if (!ilimitado) {
+      const limite = Number(limite_terrenos_override);
+
+      if (Number.isNaN(limite) || limite < 0) {
+        return res.status(400).json({
+          message: "Debes enviar un límite válido o marcar la opción ilimitado",
+        });
+      }
+
+      nuevoLimite = limite;
+    }
+
+    const result = await pool.query(
+      `
+      UPDATE suscripciones
+      SET
+        limite_terrenos_override = $1,
+        actualizada_en = NOW()
+      WHERE id = $2
+      RETURNING *
+      `,
+      [nuevoLimite, usuario.suscripcion_actual_id]
+    );
+
+    return res.json({
+      message: ilimitado
+        ? "Límite actualizado a ilimitado"
+        : "Límite de publicaciones actualizado correctamente",
+      suscripcion: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Error actualizando límite del colaborador:", error);
+    return res.status(500).json({
+      message: "Error actualizando el límite del colaborador",
     });
   }
 };

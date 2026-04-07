@@ -20,6 +20,7 @@ import {
   User,
   ChevronDown,
   Heart,
+  ShieldCheck,
 } from "lucide-react";
 import { getSocket } from "@/src/lib/socket";
 
@@ -45,7 +46,7 @@ const API_URL = "http://localhost:5000";
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, logout, loading } = useAuth();
+  const { user, logout, loading, refreshUser } = useAuth();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -60,17 +61,16 @@ export default function Navbar() {
 
   const navLinksPublic = [
     { label: "Comprar", href: "/terrenos" },
-    { label: "Vender", href: "/publicar" },
+    { label: "Planes", href: "/planes" },
     { label: "Tipos de terrenos", href: "/tipos" },
     { label: "Zonas", href: "/zonas" },
     { label: "Desarrollos", href: "/desarrollos" },
   ];
 
   const navLinksColaborador = [
-    { label: "Centro de control", href: "/colaborador" },
     { label: "Mis terrenos", href: "/colaborador/misTerrenos" },
     { label: "Leads", href: "/colaborador/leads" },
-    { label: "Mensajes", href: "/colaborador/mensajes" },
+    { label: "Membresía", href: "/suscripciones" },
   ];
 
   const totalNoLeidas = useMemo(
@@ -88,12 +88,14 @@ export default function Navbar() {
       ? "COLABORADOR"
       : user?.rol === "usuario"
       ? "USUARIO"
+      : user?.rol === "admin"
+      ? "ADMIN"
       : "";
 
   const fotoPerfilUrl = useMemo(() => {
     if (!user?.foto_perfil) return "";
-    return `${API_URL}${user.foto_perfil}`;
-  }, [user?.foto_perfil]);
+    return `${API_URL}${user.foto_perfil}?v=${user?.foto_cache_key || Date.now()}`;
+  }, [user?.foto_perfil, user?.foto_cache_key]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -103,6 +105,19 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  /**
+   * Refresco extra para asegurar que el navbar tenga foto al iniciar sesión
+   * si el login inicial no trae foto_perfil todavía.
+   */
+  useEffect(() => {
+    if (loading) return;
+    if (!user?.id) return;
+
+    if ((user.rol === "usuario" || user.rol === "colaborador") && !user.foto_perfil) {
+      refreshUser();
+    }
+  }, [loading, user?.id, user?.rol]);
 
   useEffect(() => {
     if (loading) return;
@@ -298,15 +313,29 @@ export default function Navbar() {
     }
   };
 
-  if (
-    pathname === "/login" ||
-    pathname === "/register" ||
-    pathname.startsWith("/admin")
-  ) {
+  if (pathname === "/login" || pathname === "/register") {
     return null;
   }
 
   if (loading) return null;
+
+  const renderAvatar = (size = "h-8 w-8", iconSize = 16) => {
+    if (fotoPerfilUrl) {
+      return (
+        <img
+          src={fotoPerfilUrl}
+          alt="Foto de perfil"
+          className={`${size} rounded-full object-cover`}
+        />
+      );
+    }
+
+    return (
+      <div className={`flex ${size} items-center justify-center rounded-full bg-[#9f885c]/15`}>
+        <User size={iconSize} />
+      </div>
+    );
+  };
 
   return (
     <header className="fixed left-0 top-4 z-50 flex w-full justify-center">
@@ -366,6 +395,19 @@ export default function Navbar() {
 
             {user?.rol === "colaborador" &&
               navLinksColaborador.map((link) => (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className={`transition hover:text-[#828d4b] ${
+                    pathname === link.href ? "text-[#22341c]" : "text-[#4f4a3d]"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+
+            {user?.rol === "admin" &&
+              navLinksPublic.map((link) => (
                 <Link
                   key={link.label}
                   href={link.href}
@@ -544,17 +586,7 @@ export default function Navbar() {
                     onClick={() => setOpenProfileMenu((prev) => !prev)}
                     className="flex items-center gap-2 rounded-full border border-[#817d58]/15 bg-white px-3 py-2 text-[#22341c] transition hover:bg-[#f7f6f1]"
                   >
-                    {fotoPerfilUrl ? (
-                      <img
-                        src={fotoPerfilUrl}
-                        alt="Foto de perfil"
-                        className="h-8 w-8 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#9f885c]/15">
-                        <User size={16} />
-                      </div>
-                    )}
+                    {renderAvatar()}
                     <ChevronDown size={16} />
                   </button>
 
@@ -568,17 +600,7 @@ export default function Navbar() {
                       >
                         <div className="border-b border-[#817d58]/12 px-4 py-4">
                           <div className="flex items-center gap-3">
-                            {fotoPerfilUrl ? (
-                              <img
-                                src={fotoPerfilUrl}
-                                alt="Foto de perfil"
-                                className="h-12 w-12 rounded-full object-cover ring-2 ring-[#9f885c]/15"
-                              />
-                            ) : (
-                              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#9f885c]/15 text-[#22341c]">
-                                <User size={20} />
-                              </div>
-                            )}
+                            {renderAvatar("h-12 w-12", 20)}
 
                             <div className="min-w-0">
                               <p className="truncate font-semibold text-[#22341c]">
@@ -629,6 +651,15 @@ export default function Navbar() {
                           </Link>
 
                           <Link
+                            href="/planes"
+                            onClick={() => setOpenProfileMenu(false)}
+                            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#22341c] transition hover:bg-[#f7f6f1]"
+                          >
+                            <BadgeCheck size={16} />
+                            Planes
+                          </Link>
+
+                          <Link
                             href="/usuario/configuracion"
                             onClick={() => setOpenProfileMenu(false)}
                             className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#22341c] transition hover:bg-[#f7f6f1]"
@@ -670,7 +701,7 @@ export default function Navbar() {
                 <Link
                   href="/colaborador"
                   className="flex h-10 w-10 items-center justify-center rounded-full border border-[#817d58]/15 bg-white text-[#22341c] transition hover:bg-[#f7f6f1]"
-                  title="Centro de control"
+                  title="Panel"
                 >
                   <LayoutGrid size={18} />
                 </Link>
@@ -689,17 +720,7 @@ export default function Navbar() {
                     onClick={() => setOpenProfileMenu((prev) => !prev)}
                     className="flex items-center gap-2 rounded-full border border-[#817d58]/15 bg-white px-3 py-2 text-[#22341c] transition hover:bg-[#f7f6f1]"
                   >
-                    {fotoPerfilUrl ? (
-                      <img
-                        src={fotoPerfilUrl}
-                        alt="Foto de perfil"
-                        className="h-8 w-8 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#9f885c]/15">
-                        <User size={16} />
-                      </div>
-                    )}
+                    {renderAvatar()}
                     <ChevronDown size={16} />
                   </button>
 
@@ -713,17 +734,7 @@ export default function Navbar() {
                       >
                         <div className="border-b border-[#817d58]/12 px-4 py-4">
                           <div className="flex items-center gap-3">
-                            {fotoPerfilUrl ? (
-                              <img
-                                src={fotoPerfilUrl}
-                                alt="Foto de perfil"
-                                className="h-12 w-12 rounded-full object-cover ring-2 ring-[#9f885c]/15"
-                              />
-                            ) : (
-                              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#9f885c]/15 text-[#22341c]">
-                                <User size={20} />
-                              </div>
-                            )}
+                            {renderAvatar("h-12 w-12", 20)}
 
                             <div className="min-w-0">
                               <p className="truncate font-semibold text-[#22341c]">
@@ -747,15 +758,6 @@ export default function Navbar() {
                           </Link>
 
                           <Link
-                            href="/colaborador"
-                            onClick={() => setOpenProfileMenu(false)}
-                            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#22341c] transition hover:bg-[#f7f6f1]"
-                          >
-                            <LayoutGrid size={16} />
-                            Centro de control
-                          </Link>
-
-                          <Link
                             href="/colaborador/configuracion"
                             onClick={() => setOpenProfileMenu(false)}
                             className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#22341c] transition hover:bg-[#f7f6f1]"
@@ -771,6 +773,74 @@ export default function Navbar() {
                           >
                             <BadgeCheck size={16} />
                             Membresía
+                          </Link>
+
+                          <button
+                            onClick={handleLogout}
+                            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-red-600 transition hover:bg-red-50"
+                          >
+                            <LogOut size={16} />
+                            Cerrar sesión
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </>
+            )}
+
+            {user?.rol === "admin" && (
+              <>
+                <Link
+                  href="/admin"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#22341c] px-4 py-2 text-sm text-white transition hover:bg-[#828d4b]"
+                >
+                  <ShieldCheck size={16} />
+                  Volver al CRM
+                </Link>
+
+                <div className="relative" ref={profileRef}>
+                  <button
+                    type="button"
+                    onClick={() => setOpenProfileMenu((prev) => !prev)}
+                    className="flex items-center gap-2 rounded-full border border-[#817d58]/15 bg-white px-3 py-2 text-[#22341c] transition hover:bg-[#f7f6f1]"
+                  >
+                    {renderAvatar()}
+                    <ChevronDown size={16} />
+                  </button>
+
+                  <AnimatePresence>
+                    {openProfileMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                        className="absolute right-0 top-12 z-50 w-[280px] overflow-hidden rounded-[1.5rem] border border-[#817d58]/12 bg-white shadow-2xl"
+                      >
+                        <div className="border-b border-[#817d58]/12 px-4 py-4">
+                          <div className="flex items-center gap-3">
+                            {renderAvatar("h-12 w-12", 20)}
+
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-[#22341c]">
+                                {user?.nombre || "Administrador"}
+                              </p>
+                              <p className="text-xs uppercase tracking-[0.12em] text-[#817d58]">
+                                Administrador
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="p-2">
+                          <Link
+                            href="/admin"
+                            onClick={() => setOpenProfileMenu(false)}
+                            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#22341c] transition hover:bg-[#f7f6f1]"
+                          >
+                            <LayoutGrid size={16} />
+                            Volver al CRM
                           </Link>
 
                           <button
@@ -872,6 +942,14 @@ export default function Navbar() {
                   </Link>
 
                   <Link
+                    href="/planes"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="text-[#22341c]"
+                  >
+                    Planes
+                  </Link>
+
+                  <Link
                     href="/usuario/configuracion"
                     onClick={() => setIsMenuOpen(false)}
                     className="text-[#22341c]"
@@ -883,13 +961,6 @@ export default function Navbar() {
 
               {user?.rol === "colaborador" && (
                 <>
-                  <Link
-                    href="/colaborador"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="text-[#22341c]"
-                  >
-                    Centro de control
-                  </Link>
                   <Link
                     href="/colaborador/misTerrenos"
                     onClick={() => setIsMenuOpen(false)}
@@ -903,6 +974,13 @@ export default function Navbar() {
                     className="text-[#22341c]"
                   >
                     Leads
+                  </Link>
+                  <Link
+                    href="/suscripciones"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="text-[#22341c]"
+                  >
+                    Membresía
                   </Link>
                   <Link
                     href="/colaborador/mensajes"
@@ -938,6 +1016,29 @@ export default function Navbar() {
                     className="text-[#22341c]"
                   >
                     Publicar
+                  </Link>
+                </>
+              )}
+
+              {user?.rol === "admin" && (
+                <>
+                  {navLinksPublic.map((link) => (
+                    <Link
+                      key={link.label}
+                      href={link.href}
+                      onClick={() => setIsMenuOpen(false)}
+                      className="text-[#22341c]"
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+
+                  <Link
+                    href="/admin"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="text-[#22341c]"
+                  >
+                    Volver al CRM
                   </Link>
                 </>
               )}

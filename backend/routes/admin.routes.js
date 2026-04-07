@@ -15,16 +15,19 @@ router.delete('/users/:id', authMiddleware, roleMiddleware('admin'), adminContro
 router.get("/colaboradores",authMiddleware,roleMiddleware("admin"),adminController.getColaboradores);
 router.put('/usuarios/:id/auto-aprobado', authMiddleware, roleMiddleware('admin'), adminController.updateAutoAprobado);
 
+router.put(
+  '/colaboradores/:id/limite',
+  authMiddleware,
+  roleMiddleware('admin'),
+  adminController.updateColaboradorLimite
+);
+
 router.get(
   '/dashboard',
   authMiddleware,
   roleMiddleware('admin'),
   adminController.getDashboardStats
 );
-
-/* ===========================
-   PUBLICACIONES
-=========================== */
 
 router.get(
   '/publicaciones',
@@ -61,7 +64,6 @@ router.put(
   adminController.restaurarPublicacion
 );
 
-// 🔥 Eliminación definitiva (sin romper nada anterior)
 router.delete(
   "/publicaciones/:id/definitivo",
   authMiddleware,

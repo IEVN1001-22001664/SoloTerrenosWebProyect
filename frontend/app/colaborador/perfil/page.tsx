@@ -52,10 +52,10 @@ export default function ColaboradorPerfilPage() {
 
   useEffect(() => {
     if (loading) return;
-    if (!user) return;
+    if (!user?.id) return;
 
     fetchProfile();
-  }, [loading, user]);
+  }, [loading, user?.id]);
 
   const fetchProfile = async () => {
     try {
@@ -153,40 +153,54 @@ export default function ColaboradorPerfilPage() {
 
   const handleSaveProfileImage = async (file: File) => {
     try {
-        setSubiendoFoto(true);
+      setSubiendoFoto(true);
 
-        const formData = new FormData();
-        formData.append("foto", file);
+      const formData = new FormData();
+      formData.append("foto", file);
 
-        const response = await fetch(`${API_URL}/api/auth/upload-profile-photo`, {
+      const response = await fetch(`${API_URL}/api/auth/upload-profile-photo`, {
         method: "POST",
         credentials: "include",
         body: formData,
-        });
+      });
 
-        const data = await response.json();
+      const data = await response.json();
 
-        if (!response.ok) {
+      if (!response.ok) {
         throw new Error(data.message || "No se pudo subir la foto.");
-        }
+      }
 
-        updateUser({ foto_perfil: data.foto_perfil });
+      const nuevaVersion = Date.now();
 
-        toast.success("Foto de perfil actualizada correctamente.");
+      // Actualiza contexto global inmediatamente
+      updateUser({
+        foto_perfil: data.foto_perfil,
+        foto_cache_key: nuevaVersion,
+      });
 
-        await refreshUser();
-        await fetchProfile();
-        setFotoVersion(Date.now());
+      // Actualiza la vista local inmediatamente
+      setMeta((prev) => ({
+        ...prev,
+        foto_perfil: data.foto_perfil,
+      }));
+
+      setFotoVersion(nuevaVersion);
+
+      toast.success("Foto de perfil actualizada correctamente.");
+
+      // Refresca datos desde backend para mantener consistencia
+      await refreshUser();
+      await fetchProfile();
     } catch (error: any) {
-        console.error("Error subiendo foto:", error);
-        toast.error("Ocurrió un error al subir la foto.", {
+      console.error("Error subiendo foto:", error);
+      toast.error("Ocurrió un error al subir la foto.", {
         description: error.message || "Inténtalo nuevamente.",
-        });
-        throw error;
+      });
+      throw error;
     } finally {
-        setSubiendoFoto(false);
+      setSubiendoFoto(false);
     }
-    };
+  };
 
   const fotoPerfilUrl = useMemo(() => {
     if (!meta.foto_perfil) return "";

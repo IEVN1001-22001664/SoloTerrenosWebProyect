@@ -1,18 +1,13 @@
 const express = require("express");
 const router = express.Router();
+
 const upload = require("../middleware/upload.middleware");
 const imagenesController = require("../controllers/imagenes.controller");
-
-const verifyToken = require("../middleware/verifyToken");
-
-console.log("verifyToken:", typeof verifyToken);
-console.log("subirImagenes:", typeof imagenesController.subirImagenes);
-console.log("obtenerImagenesTerreno:", typeof imagenesController.obtenerImagenesTerreno);
-console.log("eliminarImagen:", typeof imagenesController.eliminarImagen);
+const authMiddleware = require("../middleware/auth.middleware");
 
 router.post(
   "/terrenos/:id/imagenes",
-  verifyToken,
+  authMiddleware,
   upload.array("imagenes", 15),
   imagenesController.subirImagenes
 );
@@ -26,7 +21,7 @@ router.get(
 // ELIMINAR IMAGEN
 router.delete(
   "/imagenes/:id",
-  verifyToken,
+  authMiddleware,
   imagenesController.eliminarImagen
 );
 

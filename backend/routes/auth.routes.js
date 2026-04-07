@@ -1,18 +1,18 @@
 const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/auth.controller");
-const verifyToken = require("../middleware/verifyToken");
+const authMiddleware = require("../middleware/auth.middleware");
 const upload = require("../middleware/uploadProfile");
 
-router.get("/me", verifyToken, authController.me);
+router.get("/me", authMiddleware, authController.me);
 
 // PERFIL
-router.get("/profile", verifyToken, authController.getProfile);
-router.put("/profile", verifyToken, authController.updateProfile);
-router.put("/change-password", verifyToken, authController.changePassword);
+router.get("/profile", authMiddleware, authController.getProfile);
+router.put("/profile", authMiddleware, authController.updateProfile);
+router.put("/change-password", authMiddleware, authController.changePassword);
 router.post(
   "/upload-profile-photo",
-  verifyToken,
+  authMiddleware,
   upload.single("foto"),
   authController.uploadProfilePhoto
 );

@@ -3,10 +3,7 @@ const router = express.Router();
 
 const uploadDocumentos = require("../middleware/uploadDocumentos.middleware");
 const documentosLegalesController = require("../controllers/documentosLegales.controller");
-const verifyToken = require("../middleware/verifyToken");
-
-console.log("Controller:", documentosLegalesController);
-console.log("subirDocumentos:", typeof documentosLegalesController.subirDocumentos);
+const authMiddleware = require("../middleware/auth.middleware");
 
 // ======================================================
 // SUBIR DOCUMENTOS LEGALES DE UN TERRENO
@@ -14,7 +11,7 @@ console.log("subirDocumentos:", typeof documentosLegalesController.subirDocument
 
 router.post(
   "/terrenos/:id/documentos",
-  verifyToken,
+  authMiddleware,
   uploadDocumentos.array("documentos", 10),
   documentosLegalesController.subirDocumentos
 );
@@ -25,7 +22,7 @@ router.post(
 
 router.get(
   "/terrenos/:id/documentos",
-  verifyToken,
+  authMiddleware,
   documentosLegalesController.obtenerDocumentosTerreno
 );
 
@@ -35,7 +32,7 @@ router.get(
 
 router.delete(
   "/documentos/:id",
-  verifyToken,
+  authMiddleware,
   documentosLegalesController.eliminarDocumento
 );
 

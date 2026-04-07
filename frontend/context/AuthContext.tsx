@@ -9,6 +9,7 @@ interface User {
   apellido?: string;
   email?: string;
   foto_perfil?: string | null;
+  foto_cache_key?: number;
 }
 
 interface AuthContextType {
@@ -41,7 +42,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       const data = await res.json();
-      setUser(data.user);
+
+      setUser((prev) => ({
+        ...data.user,
+        foto_cache_key: prev?.foto_cache_key || Date.now(),
+      }));
     } catch (error) {
       console.error("Error refrescando usuario:", error);
       setUser(null);
@@ -61,7 +66,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const login = (userData: User) => {
-    setUser(userData);
+    setUser({
+      ...userData,
+      foto_cache_key: Date.now(),
+    });
   };
 
   const updateUser = (data: Partial<User>) => {

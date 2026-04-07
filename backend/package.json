@@ -3,7 +3,9 @@
     "dev": "node server.js",
     "start": "node server.js",
     "seed:admin": "node scripts/seedAdmin.js",
-    "seed:users": "node scripts/seedUsers.js"
+    "seed:users": "node scripts/seedUsers.js",
+    "seed:colaboradores": "node scripts/seedColaboradores.js",
+    "seed:terrenos": "node scripts/seedTerrenos.js"
   },
   "dependencies": {
     "@turf/turf": "^7.3.4",
