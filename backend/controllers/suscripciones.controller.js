@@ -47,6 +47,231 @@ async function getPlanesActivos(req, res) {
     });
   }
 }
+async function listarPlanesAdmin(req, res) {
+  try {
+    const result = await pool.query(`
+      SELECT
+        id,
+        codigo,
+        nombre,
+        descripcion,
+        precio_mensual,
+        precio_anual,
+        moneda,
+        limite_terrenos,
+        permite_destacados,
+        duracion_dias_trial,
+        activo,
+        stripe_price_id_mensual,
+        stripe_price_id_anual,
+        creado_en,
+        actualizado_en
+      FROM planes_suscripcion
+      ORDER BY id ASC
+    `);
+
+    return res.json(result.rows);
+  } catch (error) {
+    console.error("Error listando planes admin:", error);
+    return res.status(500).json({
+      message: "Error listando planes.",
+    });
+  }
+}
+
+async function crearPlanAdmin(req, res) {
+  try {
+    const {
+      codigo,
+      nombre,
+      descripcion,
+      precio_mensual,
+      precio_anual,
+      moneda,
+      limite_terrenos,
+      permite_destacados,
+      duracion_dias_trial,
+      activo,
+      stripe_price_id_mensual,
+      stripe_price_id_anual,
+    } = req.body;
+
+    if (!codigo || !nombre) {
+      return res.status(400).json({
+        message: "Código y nombre son obligatorios.",
+      });
+    }
+
+    const result = await pool.query(
+      `
+      INSERT INTO planes_suscripcion (
+        codigo,
+        nombre,
+        descripcion,
+        precio_mensual,
+        precio_anual,
+        moneda,
+        limite_terrenos,
+        permite_destacados,
+        duracion_dias_trial,
+        activo,
+        stripe_price_id_mensual,
+        stripe_price_id_anual,
+        creado_en,
+        actualizado_en
+      )
+      VALUES (
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW(),NOW()
+      )
+      RETURNING *
+      `,
+      [
+        codigo,
+        nombre,
+        descripcion || null,
+        precio_mensual ?? 0,
+        precio_anual ?? 0,
+        moneda || "MXN",
+        limite_terrenos === "" || limite_terrenos === undefined ? null : limite_terrenos,
+        permite_destacados ?? false,
+        duracion_dias_trial ?? 0,
+        activo ?? true,
+        stripe_price_id_mensual || null,
+        stripe_price_id_anual || null,
+      ]
+    );
+
+    return res.status(201).json({
+      message: "Plan creado correctamente.",
+      plan: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Error creando plan:", error);
+
+    if (error.code === "23505") {
+      return res.status(400).json({
+        message: "Ya existe un plan con ese código.",
+      });
+    }
+
+    return res.status(500).json({
+      message: "Error creando plan.",
+    });
+  }
+}
+
+async function actualizarPlanAdmin(req, res) {
+  try {
+    const { id } = req.params;
+    const {
+      codigo,
+      nombre,
+      descripcion,
+      precio_mensual,
+      precio_anual,
+      moneda,
+      limite_terrenos,
+      permite_destacados,
+      duracion_dias_trial,
+      activo,
+      stripe_price_id_mensual,
+      stripe_price_id_anual,
+    } = req.body;
+
+    const result = await pool.query(
+      `
+      UPDATE planes_suscripcion
+      SET
+        codigo = $1,
+        nombre = $2,
+        descripcion = $3,
+        precio_mensual = $4,
+        precio_anual = $5,
+        moneda = $6,
+        limite_terrenos = $7,
+        permite_destacados = $8,
+        duracion_dias_trial = $9,
+        activo = $10,
+        stripe_price_id_mensual = $11,
+        stripe_price_id_anual = $12,
+        actualizado_en = NOW()
+      WHERE id = $13
+      RETURNING *
+      `,
+      [
+        codigo,
+        nombre,
+        descripcion || null,
+        precio_mensual ?? 0,
+        precio_anual ?? 0,
+        moneda || "MXN",
+        limite_terrenos === "" || limite_terrenos === undefined ? null : limite_terrenos,
+        permite_destacados ?? false,
+        duracion_dias_trial ?? 0,
+        activo ?? true,
+        stripe_price_id_mensual || null,
+        stripe_price_id_anual || null,
+        id,
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        message: "Plan no encontrado.",
+      });
+    }
+
+    return res.json({
+      message: "Plan actualizado correctamente.",
+      plan: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Error actualizando plan:", error);
+
+    if (error.code === "23505") {
+      return res.status(400).json({
+        message: "Ya existe otro plan con ese código.",
+      });
+    }
+
+    return res.status(500).json({
+      message: "Error actualizando plan.",
+    });
+  }
+}
+
+async function cambiarEstadoPlanAdmin(req, res) {
+  try {
+    const { id } = req.params;
+    const { activo } = req.body;
+
+    const result = await pool.query(
+      `
+      UPDATE planes_suscripcion
+      SET activo = $1, actualizado_en = NOW()
+      WHERE id = $2
+      RETURNING *
+      `,
+      [activo, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        message: "Plan no encontrado.",
+      });
+    }
+
+    return res.json({
+      message: "Estado del plan actualizado correctamente.",
+      plan: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Error cambiando estado del plan:", error);
+    return res.status(500).json({
+      message: "Error cambiando estado del plan.",
+    });
+  }
+}
 
 async function asignarSuscripcionAdmin(req, res) {
   try {
@@ -222,6 +447,8 @@ async function getCapacidadPublicacion(req, res) {
     });
   }
 }
+
+
 module.exports = {
   getMiSuscripcion,
   getPlanesActivos,
@@ -232,4 +459,8 @@ module.exports = {
   procesarVencidasAdmin,
   listarSuscripcionesPanelAdmin,
   getCapacidadPublicacion,
+  listarPlanesAdmin,
+  crearPlanAdmin,
+  actualizarPlanAdmin,
+  cambiarEstadoPlanAdmin,
 };

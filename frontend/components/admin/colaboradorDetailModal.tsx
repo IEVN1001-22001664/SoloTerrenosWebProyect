@@ -191,7 +191,7 @@ export default function ColaboradorDetailModal({
                     </div>
 
                     <Link
-                      href={`/terrenos/${terreno.id}`}
+                      href={`/colaborador/misTerrenos/${terreno.id}`}
                       className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                     >
                       Ver terreno

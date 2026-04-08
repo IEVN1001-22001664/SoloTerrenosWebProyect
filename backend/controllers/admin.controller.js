@@ -1,4 +1,5 @@
 const pool = require('../db');
+const deleteFileIfExists = require("../utils/deleteFileIfExists");
 
 /* ===========================
    USUARIOS
@@ -174,18 +175,98 @@ exports.getPublicaciones = async (req, res) => {
       SELECT 
         t.id,
         t.titulo,
+        t.descripcion,
         t.estado,
         t.creado_en,
-        u.nombre AS usuario
+        t.actualizado_en,
+        t.precio,
+        t.ubicacion,
+        t.municipio,
+        t.estado_region,
+        t.colonia,
+        t.direccion,
+        t.codigo_postal,
+        t.area_m2,
+        t.perimetro_m,
+        t.tipo,
+        t.uso_suelo,
+        t.topografia,
+        t.forma,
+        t.tipo_propiedad,
+        t.negociable,
+        t.escritura,
+        t.estatus_legal,
+        t.gravamen,
+
+        u.id AS usuario_id,
+        CONCAT(COALESCE(u.nombre, ''), ' ', COALESCE(u.apellido, '')) AS usuario,
+        u.email AS usuario_email,
+
+        ti.url AS imagen_principal,
+
+        COALESCE(img.total_imagenes, 0) AS total_imagenes,
+        COALESCE(doc.total_documentos, 0) AS total_documentos,
+
+        CASE
+          WHEN COALESCE(img.total_imagenes, 0) = 0 THEN false
+          ELSE true
+        END AS tiene_imagenes,
+
+        CASE
+          WHEN COALESCE(doc.total_documentos, 0) = 0 THEN false
+          ELSE true
+        END AS tiene_documentos,
+
+        CASE
+          WHEN COALESCE(img.total_imagenes, 0) > 0
+           AND COALESCE(doc.total_documentos, 0) > 0
+           AND t.precio IS NOT NULL
+           AND t.area_m2 IS NOT NULL
+           AND t.municipio IS NOT NULL
+           AND t.estado_region IS NOT NULL
+          THEN true
+          ELSE false
+        END AS lista_para_revision
+
       FROM terrenos t
-      JOIN usuarios u ON t.usuario_id = u.id
+      JOIN usuarios u 
+        ON t.usuario_id = u.id
+
+      LEFT JOIN LATERAL (
+        SELECT url
+        FROM terreno_imagenes
+        WHERE terreno_id = t.id
+        ORDER BY id ASC
+        LIMIT 1
+      ) ti ON true
+
+      LEFT JOIN (
+        SELECT terreno_id, COUNT(*) AS total_imagenes
+        FROM terreno_imagenes
+        GROUP BY terreno_id
+      ) img ON img.terreno_id = t.id
+
+      LEFT JOIN (
+        SELECT terreno_id, COUNT(*) AS total_documentos
+        FROM terreno_documentos
+        GROUP BY terreno_id
+      ) doc ON doc.terreno_id = t.id
+
       WHERE t.estado != 'eliminado'
-      ORDER BY t.creado_en DESC
+      ORDER BY 
+        CASE 
+          WHEN t.estado = 'pendiente' THEN 0
+          WHEN t.estado = 'pausado' THEN 1
+          WHEN t.estado = 'rechazado' THEN 2
+          WHEN t.estado = 'aprobado' THEN 3
+          ELSE 4
+        END,
+        t.creado_en DESC
     `);
 
     res.json(result.rows);
   } catch (error) {
-    console.error(error);
+    console.error("Error obteniendo publicaciones:", error);
     res.status(500).json({ message: "Error obteniendo publicaciones" });
   }
 };
@@ -206,11 +287,23 @@ exports.cambiarEstadoPublicacion = async (req, res) => {
       });
     }
 
-    // Si rechaza, el mensaje debe ser obligatorio
-    if (estado === "rechazado" && (!mensaje || !mensaje.trim())) {
+    // Si rechaza o pausa, el mensaje debe ser obligatorio
+    if (
+      (estado === "rechazado" || estado === "pausado") &&
+      (!mensaje || !mensaje.trim())
+    ) {
       return res.status(400).json({
-        message: "Debes proporcionar un mensaje de observación al rechazar una publicación",
+        message:
+          estado === "rechazado"
+            ? "Debes proporcionar un mensaje de observación al rechazar una publicación"
+            : "Debes proporcionar un mensaje de observación al pausar una publicación",
       });
+    }
+    if (estado === "pausado") {
+      tituloNotificacion = "Publicación pausada";
+      mensajeNotificacion =
+        mensaje?.trim() ||
+        `Tu terreno "${terreno.titulo}" fue pausado temporalmente. Revisa la observación del administrador.`;
     }
 
     await client.query("BEGIN");
@@ -332,14 +425,46 @@ exports.cambiarEstadoPublicacion = async (req, res) => {
 
 exports.obtenerPublicacionesBorradas = async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT * FROM terrenos WHERE estado = 'eliminado' ORDER BY id DESC"
-    );
+    const result = await pool.query(`
+      SELECT 
+        t.id,
+        t.titulo,
+        t.precio,
+        t.estado,
+        t.creado_en,
+        t.actualizado_en,
+        t.municipio,
+        t.estado_region,
 
-    res.json(result.rows);
+        CONCAT(COALESCE(u.nombre, ''), ' ', COALESCE(u.apellido, '')) AS usuario,
+        u.email AS usuario_email,
+
+        ti.url AS imagen_principal
+
+      FROM terrenos t
+
+      LEFT JOIN usuarios u 
+        ON t.usuario_id = u.id
+
+      LEFT JOIN LATERAL (
+        SELECT url
+        FROM terreno_imagenes
+        WHERE terreno_id = t.id
+        ORDER BY id ASC
+        LIMIT 1
+      ) ti ON true
+
+      WHERE t.estado = 'eliminado'
+
+      ORDER BY t.creado_en DESC
+    `);
+
+    return res.json(result.rows);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error obteniendo borrados" });
+    console.error("Error obteniendo borrados:", error);
+    return res.status(500).json({
+      message: "Error obteniendo borrados",
+    });
   }
 };
 
@@ -385,21 +510,224 @@ exports.eliminarPublicacion = async (req, res) => {
 
 exports.eliminarDefinitivamente = async (req, res) => {
   const { id } = req.params;
+  const client = await pool.connect();
 
   try {
-    const result = await pool.query(
-      "DELETE FROM terrenos WHERE id = $1 RETURNING *",
+    await client.query("BEGIN");
+
+    const terrenoResult = await client.query(
+      `
+      SELECT id, titulo
+      FROM terrenos
+      WHERE id = $1
+        AND estado = 'eliminado'
+      LIMIT 1
+      `,
       [id]
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Publicación no encontrada" });
+    if (terrenoResult.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({
+        message: "La publicación no existe o no está en papelera",
+      });
     }
 
-    res.json({ message: "Publicación eliminada permanentemente" });
+    const imagenesResult = await client.query(
+      `
+      SELECT url
+      FROM terreno_imagenes
+      WHERE terreno_id = $1
+      `,
+      [id]
+    );
+
+    const documentosResult = await client.query(
+      `
+      SELECT ruta
+      FROM terreno_documentos
+      WHERE terreno_id = $1
+      `,
+      [id]
+    );
+
+    const archivosAEliminar = [
+      ...imagenesResult.rows.map((img) => img.url),
+      ...documentosResult.rows.map((doc) => doc.ruta),
+    ];
+
+    const deleteResult = await client.query(
+      `
+      DELETE FROM terrenos
+      WHERE id = $1
+        AND estado = 'eliminado'
+      RETURNING id, titulo
+      `,
+      [id]
+    );
+
+    await client.query("COMMIT");
+
+    for (const archivo of archivosAEliminar) {
+      deleteFileIfExists(archivo);
+    }
+
+    return res.json({
+      message: "Publicación eliminada permanentemente",
+      publicacion: deleteResult.rows[0],
+    });
   } catch (error) {
+    await client.query("ROLLBACK");
     console.error("Error eliminando definitivamente:", error);
-    res.status(500).json({ message: "Error eliminando definitivamente" });
+    return res.status(500).json({
+      message: "Error eliminando definitivamente",
+    });
+  } finally {
+    client.release();
+  }
+};
+
+exports.vaciarPapelera = async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const terrenosResult = await client.query(`
+      SELECT id
+      FROM terrenos
+      WHERE estado = 'eliminado'
+    `);
+
+    const ids = terrenosResult.rows.map((row) => row.id);
+
+    if (ids.length === 0) {
+      await client.query("COMMIT");
+      return res.json({
+        message: "La papelera ya está vacía",
+        total_eliminados: 0,
+      });
+    }
+
+    const imagenesResult = await client.query(
+      `
+      SELECT url
+      FROM terreno_imagenes
+      WHERE terreno_id = ANY($1::int[])
+      `,
+      [ids]
+    );
+
+    const documentosResult = await client.query(
+      `
+      SELECT ruta
+      FROM terreno_documentos
+      WHERE terreno_id = ANY($1::int[])
+      `,
+      [ids]
+    );
+
+    const archivosAEliminar = [
+      ...imagenesResult.rows.map((img) => img.url),
+      ...documentosResult.rows.map((doc) => doc.ruta),
+    ];
+
+    const deleteResult = await client.query(
+      `
+      DELETE FROM terrenos
+      WHERE id = ANY($1::int[])
+        AND estado = 'eliminado'
+      RETURNING id
+      `,
+      [ids]
+    );
+
+    await client.query("COMMIT");
+
+    for (const archivo of archivosAEliminar) {
+      deleteFileIfExists(archivo);
+    }
+
+    return res.json({
+      message: "Papelera vaciada correctamente",
+      total_eliminados: deleteResult.rowCount,
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error vaciando papelera:", error);
+    return res.status(500).json({
+      message: "Error vaciando papelera",
+    });
+  } finally {
+    client.release();
+  }
+};
+
+exports.eliminarSeleccionadosDefinitivamente = async (req, res) => {
+  const { ids } = req.body;
+  const client = await pool.connect();
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({
+      message: "Debes enviar un arreglo de IDs válido",
+    });
+  }
+
+  try {
+    await client.query("BEGIN");
+
+    const imagenesResult = await client.query(
+      `
+      SELECT url
+      FROM terreno_imagenes
+      WHERE terreno_id = ANY($1::int[])
+      `,
+      [ids]
+    );
+
+    const documentosResult = await client.query(
+      `
+      SELECT ruta
+      FROM terreno_documentos
+      WHERE terreno_id = ANY($1::int[])
+      `,
+      [ids]
+    );
+
+    const archivosAEliminar = [
+      ...imagenesResult.rows.map((img) => img.url),
+      ...documentosResult.rows.map((doc) => doc.ruta),
+    ];
+
+    const result = await client.query(
+      `
+      DELETE FROM terrenos
+      WHERE id = ANY($1::int[])
+        AND estado = 'eliminado'
+      RETURNING id
+      `,
+      [ids]
+    );
+
+    await client.query("COMMIT");
+
+    for (const archivo of archivosAEliminar) {
+      deleteFileIfExists(archivo);
+    }
+
+    return res.json({
+      message: "Publicaciones eliminadas permanentemente",
+      total_eliminados: result.rowCount,
+      ids_eliminados: result.rows.map((row) => row.id),
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error eliminando seleccionados definitivamente:", error);
+    return res.status(500).json({
+      message: "Error eliminando seleccionados definitivamente",
+    });
+  } finally {
+    client.release();
   }
 };
 

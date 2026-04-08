@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -36,6 +37,7 @@ export default function TerrenoCard({
   const [modalAbierto, setModalAbierto] = useState(false);
   const [accionPendiente, setAccionPendiente] = useState<AccionTerreno>(null);
   const [estadoModalAbierto, setEstadoModalAbierto] = useState(false);
+  const { user } = useAuth();
 
   const imagen = terreno.imagen_principal
     ? `http://localhost:5000${terreno.imagen_principal}`
@@ -59,7 +61,7 @@ export default function TerrenoCard({
   };
 
   const irAlDetalle = () => {
-    router.push(`/terrenos/${terreno.id}`);
+    router.push(`/colaborador/misTerrenos/${terreno.id}`);
   };
 
   const pausarTerreno = async () => {

@@ -1346,3 +1346,120 @@ exports.reactivarTerreno = async (req, res) => {
     });
   }
 };
+
+// =============================
+// Vista Privada de terrenos para admin
+// =============================
+exports.getTerrenoPrivadoById = async (req, res) => {
+  const { id } = req.params;
+  const usuarioId = req.user.id;
+  const rol = req.user.rol;
+
+  try {
+    // =============================
+    // 1. Obtener terreno + propietario
+    // =============================
+    const terrenoResult = await pool.query(
+      `
+      SELECT
+        t.*,
+        u.nombre AS propietario_nombre,
+        u.apellido AS propietario_apellido,
+        u.email AS propietario_email
+      FROM terrenos t
+      INNER JOIN usuarios u ON u.id = t.usuario_id
+      WHERE t.id = $1
+      LIMIT 1
+      `,
+      [id]
+    );
+
+    if (terrenoResult.rows.length === 0) {
+      return res.status(404).json({
+        message: "Terreno no encontrado",
+      });
+    }
+
+    const terreno = terrenoResult.rows[0];
+
+    // =============================
+    // 2. Control de acceso
+    // =============================
+    if (rol !== "admin" && terreno.usuario_id !== usuarioId) {
+      return res.status(403).json({
+        message: "No autorizado para ver este terreno",
+      });
+    }
+
+    // =============================
+    // 3. Obtener imágenes
+    // =============================
+    const imagenesResult = await pool.query(
+      `
+      SELECT id, url
+      FROM terreno_imagenes
+      WHERE terreno_id = $1
+      ORDER BY id ASC
+      `,
+      [id]
+    );
+
+    // =============================
+    // 4. Obtener documentos (NUEVO)
+    // =============================
+    const documentosResult = await pool.query(
+      `
+      SELECT
+        id,
+        nombre_original AS nombre,
+        ruta AS url,
+        tipo_mime AS tipo,
+        nombre_archivo,
+        tamano_bytes,
+        creado_en
+      FROM terreno_documentos
+      WHERE terreno_id = $1
+      ORDER BY id ASC
+      `,
+      [id]
+    );
+
+    // =============================
+    // 5. Normalización de datos
+    // =============================
+    const terrenoNormalizado = {
+      ...terreno,
+
+      // asegurar arrays
+      imagenes: imagenesResult.rows || [],
+      documentos: documentosResult.rows || [],
+
+      // valores booleanos normalizados (opcional pero recomendado)
+      negociable:
+        terreno.negociable === true ||
+        terreno.negociable === "true" ||
+        terreno.negociable === "sí",
+
+      escritura:
+        terreno.escritura === true ||
+        terreno.escritura === "true" ||
+        terreno.escritura === "sí",
+
+      gravamen:
+        terreno.gravamen === true ||
+        terreno.gravamen === "true" ||
+        terreno.gravamen === "sí",
+    };
+
+    // =============================
+    // 6. Respuesta final
+    // =============================
+    return res.json(terrenoNormalizado);
+  } catch (error) {
+    console.error("Error obteniendo terreno privado:", error);
+
+    return res.status(500).json({
+      message: "Error obteniendo terreno privado",
+    });
+  }
+};

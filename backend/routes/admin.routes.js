@@ -12,7 +12,7 @@ router.get('/users', authMiddleware, roleMiddleware('admin'), adminController.ge
 router.put('/users/:id/role', authMiddleware, roleMiddleware('admin'), adminController.updateUserRole);
 router.put('/users/:id/subscription', authMiddleware, roleMiddleware('admin'), adminController.toggleSubscription);
 router.delete('/users/:id', authMiddleware, roleMiddleware('admin'), adminController.deleteUser);
-router.get("/colaboradores",authMiddleware,roleMiddleware("admin"),adminController.getColaboradores);
+router.get("/colaboradores", authMiddleware, roleMiddleware("admin"), adminController.getColaboradores);
 router.put('/usuarios/:id/auto-aprobado', authMiddleware, roleMiddleware('admin'), adminController.updateAutoAprobado);
 
 router.put(
@@ -69,6 +69,20 @@ router.delete(
   authMiddleware,
   roleMiddleware("admin"),
   adminController.eliminarDefinitivamente
+);
+
+router.delete(
+  "/publicaciones/borrados/vaciar",
+  authMiddleware,
+  roleMiddleware("admin"),
+  adminController.vaciarPapelera
+);
+
+router.delete(
+  "/publicaciones/borrados/seleccionados",
+  authMiddleware,
+  roleMiddleware("admin"),
+  adminController.eliminarSeleccionadosDefinitivamente
 );
 
 module.exports = router;

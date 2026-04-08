@@ -11,6 +11,10 @@ const {
   procesarVencidasAdmin,
   listarSuscripcionesPanelAdmin,
   getCapacidadPublicacion,
+  listarPlanesAdmin,
+  crearPlanAdmin,
+  actualizarPlanAdmin,
+  cambiarEstadoPlanAdmin,
 } = require("../controllers/suscripciones.controller");
 
 const authMiddleware = require("../middleware/auth.middleware");
@@ -70,6 +74,34 @@ router.post(
   authMiddleware,
   roleMiddleware("admin"),
   procesarVencidasAdmin
+);
+
+router.get(
+  "/admin/planes",
+  authMiddleware,
+  roleMiddleware("admin"),
+  listarPlanesAdmin
+);
+
+router.post(
+  "/admin/planes",
+  authMiddleware,
+  roleMiddleware("admin"),
+  crearPlanAdmin
+);
+
+router.put(
+  "/admin/planes/:id",
+  authMiddleware,
+  roleMiddleware("admin"),
+  actualizarPlanAdmin
+);
+
+router.patch(
+  "/admin/planes/:id/activo",
+  authMiddleware,
+  roleMiddleware("admin"),
+  cambiarEstadoPlanAdmin
 );
 
 module.exports = router;

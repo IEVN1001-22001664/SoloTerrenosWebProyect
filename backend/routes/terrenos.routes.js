@@ -150,6 +150,16 @@ router.get(
   terrenosController.getByIdForEdit
 );
 
+// ======================================================
+// OBTENER TERRENO PRIVADO PARA ADMIN
+// ======================================================
+
+router.get(
+  "/privado/:id",
+  authMiddleware,
+  terrenosController.getTerrenoPrivadoById
+);
+
 
 // ======================================================
 // OBTENER TERRENO POR ID (SIEMPRE AL FINAL)

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { apiFetch } from "@/src/lib/api";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { apiFetch } from "@/src/lib/api";
 import {
   Search,
   RefreshCw,
@@ -13,15 +13,58 @@ import {
   XCircle,
   AlertCircle,
   Eye,
+  RotateCcw,
+  Check,
+  X,
+  MapPin,
+  CalendarDays,
+  LandPlot,
+  BadgeDollarSign,
+  User,
+  Mail,
+  FileText,
+  Image as ImageIcon,
+  Layers3,
+  ShieldCheck,
 } from "lucide-react";
 import CambiarEstadoPublicacionModal from "./cambiarEstadoPublicacionModal";
+
+const API_URL = "http://localhost:5000";
 
 interface Publicacion {
   id: number;
   titulo: string;
+  descripcion?: string;
   estado: string;
   creado_en: string;
+  actualizado_en?: string;
+  precio?: number | null;
+  ubicacion?: string | null;
+  municipio?: string | null;
+  estado_region?: string | null;
+  colonia?: string | null;
+  direccion?: string | null;
+  codigo_postal?: string | null;
+  area_m2?: number | null;
+  perimetro_m?: number | null;
+  tipo?: string | null;
+  uso_suelo?: string | null;
+  topografia?: string | null;
+  forma?: string | null;
+  tipo_propiedad?: string | null;
+  negociable?: boolean | string | null;
+  escritura?: boolean | string | null;
+  estatus_legal?: string | null;
+  gravamen?: boolean | string | null;
+  usuario_id?: number;
   usuario: string;
+  usuario_email?: string | null;
+  imagen_principal?: string | null;
+  total_imagenes?: number;
+  total_documentos?: number;
+  tiene_imagenes?: boolean;
+  tiene_documentos?: boolean;
+  lista_para_revision?: boolean;
 }
 
 type FiltroEstado =
@@ -45,6 +88,9 @@ export default function PublicacionesTable() {
   const [estadoDestino, setEstadoDestino] = useState("");
   const [requiereMensaje, setRequiereMensaje] = useState(false);
 
+  const [hoverResumenId, setHoverResumenId] = useState<number | null>(null);
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const fetchPublicaciones = async () => {
     try {
       setCargando(true);
@@ -63,6 +109,12 @@ export default function PublicacionesTable() {
 
   useEffect(() => {
     fetchPublicaciones();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    };
   }, []);
 
   const abrirModalCambioEstado = (
@@ -105,9 +157,7 @@ export default function PublicacionesTable() {
   };
 
   const eliminarPublicacion = async (id: number) => {
-    const confirmado = window.confirm(
-      "¿Enviar esta publicación a borrados?"
-    );
+    const confirmado = window.confirm("¿Enviar esta publicación a borrados?");
     if (!confirmado) return;
 
     try {
@@ -130,19 +180,26 @@ export default function PublicacionesTable() {
     const q = busqueda.trim().toLowerCase();
 
     return publicaciones.filter((item) => {
-      const idTexto = String(item.id);
-      const titulo = (item.titulo || "").toLowerCase();
-      const usuario = (item.usuario || "").toLowerCase();
-      const estado = (item.estado || "").toLowerCase();
+      const texto = [
+        item.id,
+        item.titulo,
+        item.usuario,
+        item.usuario_email,
+        item.estado,
+        item.municipio,
+        item.estado_region,
+        item.ubicacion,
+        item.tipo,
+        item.uso_suelo,
+        item.estatus_legal,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
 
-      const coincideBusqueda =
-        !q ||
-        idTexto.includes(q) ||
-        titulo.includes(q) ||
-        usuario.includes(q);
-
+      const coincideBusqueda = !q || texto.includes(q);
       const coincideEstado =
-        filtroEstado === "todos" ? true : estado === filtroEstado;
+        filtroEstado === "todos" ? true : item.estado?.toLowerCase() === filtroEstado;
 
       return coincideBusqueda && coincideEstado;
     });
@@ -157,7 +214,8 @@ export default function PublicacionesTable() {
     };
   }, [publicaciones]);
 
-  const formatearFecha = (fecha: string) => {
+  const formatearFecha = (fecha?: string) => {
+    if (!fecha) return "No disponible";
     return new Date(fecha).toLocaleDateString("es-MX", {
       year: "numeric",
       month: "short",
@@ -165,21 +223,94 @@ export default function PublicacionesTable() {
     });
   };
 
+  const formatearMoneda = (valor?: number | null) => {
+    if (valor === null || valor === undefined) return "No disponible";
+    return `$${Number(valor).toLocaleString("es-MX")}`;
+  };
+
+  const formatearArea = (valor?: number | null) => {
+    if (valor === null || valor === undefined) return "No disponible";
+    return `${Number(valor).toLocaleString("es-MX")} m²`;
+  };
+
+  const getImagenUrl = (url?: string | null) => {
+    if (!url) return "";
+    if (url.startsWith("http")) return url;
+    return `${API_URL}${url}`;
+  };
+
   const renderEstado = (estado: string) => {
     const e = estado.toLowerCase();
-    let classes = "bg-slate-100 text-slate-700";
+    let classes = "bg-slate-100 text-slate-700 border-slate-200";
 
-    if (e === "pendiente") classes = "bg-amber-50 text-amber-700";
-    if (e === "aprobado") classes = "bg-emerald-50 text-emerald-700";
-    if (e === "rechazado") classes = "bg-rose-50 text-rose-700";
-    if (e === "pausado") classes = "bg-slate-200 text-slate-700";
+    if (e === "pendiente") classes = "bg-amber-50 text-amber-700 border-amber-200";
+    if (e === "aprobado") classes = "bg-emerald-50 text-emerald-700 border-emerald-200";
+    if (e === "rechazado") classes = "bg-rose-50 text-rose-700 border-rose-200";
+    if (e === "pausado") classes = "bg-slate-200 text-slate-700 border-slate-300";
 
     return (
-      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${classes}`}>
+      <span
+        className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold capitalize ${classes}`}
+      >
         {estado}
       </span>
     );
   };
+
+  const iniciarHoverResumen = (id: number) => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+
+    hoverTimerRef.current = setTimeout(() => {
+      setHoverResumenId(id);
+    }, 5000);
+  };
+
+  const terminarHoverResumen = () => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    setHoverResumenId(null);
+  };
+
+  const IconActionButton = ({
+    onClick,
+    icon,
+    title,
+    className,
+    disabled = false,
+  }: {
+    onClick: () => void;
+    icon: React.ReactNode;
+    title: string;
+    className: string;
+    disabled?: boolean;
+  }) => (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      aria-label={title}
+      className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl border transition disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+    >
+      {icon}
+    </button>
+  );
+
+  const Chip = ({
+    icon,
+    label,
+    value,
+  }: {
+    icon: React.ReactNode;
+    label: string;
+    value: string | number;
+  }) => (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <p className="mt-1 text-sm font-medium text-slate-800">{value}</p>
+    </div>
+  );
 
   return (
     <>
@@ -193,7 +324,7 @@ export default function PublicacionesTable() {
               Publicaciones
             </h1>
             <p className="mt-2 text-sm text-slate-500">
-              Moderación y gestión operativa de terrenos publicados por colaboradores.
+              Revisión masiva de propuestas con datos clave, evidencia y acciones rápidas.
             </p>
           </div>
 
@@ -260,7 +391,7 @@ export default function PublicacionesTable() {
                 type="text"
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
-                placeholder="Buscar por ID, título o colaborador..."
+                placeholder="Buscar por ID, título, colaborador, correo, ubicación, tipo..."
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm text-slate-700 outline-none transition focus:border-slate-300 focus:bg-white"
               />
             </div>
@@ -279,117 +410,309 @@ export default function PublicacionesTable() {
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <section className="space-y-4">
           {cargando ? (
-            <div className="p-6 text-sm text-slate-500">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
               Cargando publicaciones...
             </div>
           ) : publicacionesFiltradas.length === 0 ? (
-            <div className="p-6 text-sm text-slate-500">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
               No se encontraron publicaciones.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-[1300px] w-full text-left">
-                <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <th className="px-4 py-4">ID</th>
-                    <th className="px-4 py-4">Título</th>
-                    <th className="px-4 py-4">Colaborador</th>
-                    <th className="px-4 py-4">Estado</th>
-                    <th className="px-4 py-4">Fecha</th>
-                    <th className="px-4 py-4">Ver</th>
-                    <th className="px-4 py-4">Acciones</th>
-                  </tr>
-                </thead>
+            publicacionesFiltradas.map((item) => {
+              const loadingEstado = accionCargando === `estado-${item.id}`;
+              const loadingDelete = accionCargando === `delete-${item.id}`;
+              const imagenUrl = getImagenUrl(item.imagen_principal);
+              const mostrarResumen = hoverResumenId === item.id;
 
-                <tbody>
-                  {publicacionesFiltradas.map((item) => {
-                    const loadingEstado = accionCargando === `estado-${item.id}`;
-                    const loadingDelete = accionCargando === `delete-${item.id}`;
-
-                    return (
-                      <tr
-                        key={item.id}
-                        className="border-b border-slate-100 transition hover:bg-slate-50/70"
+              return (
+                <article
+                  key={item.id}
+                  className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+                >
+                  <div className="grid gap-4 xl:grid-cols-[300px_1fr_245px]">
+                    <div className="relative">
+                      <div
+                        className="relative overflow-visible"
+                        onMouseEnter={() => iniciarHoverResumen(item.id)}
+                        onMouseLeave={terminarHoverResumen}
                       >
-                        <td className="px-4 py-4 text-sm font-medium text-slate-700">
-                          #{item.id}
-                        </td>
+                        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+                          {imagenUrl ? (
+                            <img
+                              src={imagenUrl}
+                              alt={item.titulo}
+                              className="h-[210px] w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-[210px] items-center justify-center text-sm text-slate-500">
+                              Sin imagen principal
+                            </div>
+                          )}
+                        </div>
 
-                        <td className="px-4 py-4">
-                          <p className="font-medium text-slate-800">{item.titulo}</p>
-                        </td>
+                        {mostrarResumen && (
+                          <div className="absolute left-0 top-[calc(100%+12px)] z-20 w-[320px] rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                              Resumen rápido
+                            </p>
 
-                        <td className="px-4 py-4 text-sm text-slate-700">
-                          {item.usuario}
-                        </td>
+                            <h3 className="mt-2 line-clamp-2 text-sm font-semibold text-slate-800">
+                              {item.titulo}
+                            </h3>
 
-                        <td className="px-4 py-4">{renderEstado(item.estado)}</td>
+                            <div className="mt-3 space-y-2 text-sm text-slate-700">
+                              <p className="flex items-center gap-2">
+                                <BadgeDollarSign className="h-4 w-4 text-slate-500" />
+                                {formatearMoneda(item.precio)}
+                              </p>
+                              <p className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4 text-slate-500" />
+                                {[item.municipio, item.estado_region].filter(Boolean).join(", ") ||
+                                  "Ubicación no disponible"}
+                              </p>
+                              <p className="flex items-center gap-2">
+                                <LandPlot className="h-4 w-4 text-slate-500" />
+                                {formatearArea(item.area_m2)}
+                              </p>
+                              <p className="flex items-center gap-2">
+                                <Layers3 className="h-4 w-4 text-slate-500" />
+                                {item.tipo || "Tipo no disponible"}
+                              </p>
+                              <p className="flex items-center gap-2">
+                                <ShieldCheck className="h-4 w-4 text-slate-500" />
+                                {item.estatus_legal || "Estatus legal no disponible"}
+                              </p>
+                              <p className="flex items-center gap-2">
+                                <User className="h-4 w-4 text-slate-500" />
+                                {item.usuario}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
 
-                        <td className="px-4 py-4 text-sm text-slate-700">
-                          {formatearFecha(item.creado_en)}
-                        </td>
+                      <div className="mt-3 flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                            Publicación
+                          </p>
+                          <p className="mt-1 text-2xl font-bold text-slate-800">
+                            #{item.id}
+                          </p>
+                        </div>
 
-                        <td className="px-4 py-4">
+                        <div>{renderEstado(item.estado)}</div>
+                      </div>
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="flex flex-col gap-4">
+                        <div>
+                          <h2 className="line-clamp-2 text-lg font-semibold text-slate-800">
+                            {item.titulo}
+                          </h2>
+
+                          {item.descripcion ? (
+                            <p className="mt-2 line-clamp-2 text-sm text-slate-500">
+                              {item.descripcion}
+                            </p>
+                          ) : null}
+                        </div>
+
+                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                          <Chip
+                            icon={<MapPin className="h-3.5 w-3.5" />}
+                            label="Municipio"
+                            value={item.municipio || "No disponible"}
+                          />
+                          <Chip
+                            icon={<MapPin className="h-3.5 w-3.5" />}
+                            label="Estado / Región"
+                            value={item.estado_region || "No disponible"}
+                          />
+                          <Chip
+                            icon={<BadgeDollarSign className="h-3.5 w-3.5" />}
+                            label="Precio"
+                            value={formatearMoneda(item.precio)}
+                          />
+                          <Chip
+                            icon={<LandPlot className="h-3.5 w-3.5" />}
+                            label="Área"
+                            value={formatearArea(item.area_m2)}
+                          />
+                          <Chip
+                            icon={<Layers3 className="h-3.5 w-3.5" />}
+                            label="Tipo"
+                            value={item.tipo || "No disponible"}
+                          />
+                          <Chip
+                            icon={<Layers3 className="h-3.5 w-3.5" />}
+                            label="Uso de suelo"
+                            value={item.uso_suelo || "No disponible"}
+                          />
+                          <Chip
+                            icon={<FileText className="h-3.5 w-3.5" />}
+                            label="Documentos"
+                            value={item.total_documentos ?? 0}
+                          />
+                          <Chip
+                            icon={<ImageIcon className="h-3.5 w-3.5" />}
+                            label="Imágenes"
+                            value={item.total_imagenes ?? 0}
+                          />
+                        </div>
+
+                        <div className="grid gap-3 lg:grid-cols-2">
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                              <User className="h-3.5 w-3.5" />
+                              <span>Colaborador</span>
+                            </div>
+                            <p className="mt-1 text-sm font-medium text-slate-800">
+                              {item.usuario}
+                            </p>
+                            <p className="mt-1 flex items-center gap-2 text-sm text-slate-500">
+                              <Mail className="h-4 w-4" />
+                              {item.usuario_email || "Correo no disponible"}
+                            </p>
+                          </div>
+
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                              <CalendarDays className="h-3.5 w-3.5" />
+                              <span>Fechas</span>
+                            </div>
+                            <p className="mt-1 text-sm text-slate-800">
+                              Creado: <span className="font-medium">{formatearFecha(item.creado_en)}</span>
+                            </p>
+                            <p className="mt-1 text-sm text-slate-800">
+                              Actualizado:{" "}
+                              <span className="font-medium">
+                                {formatearFecha(item.actualizado_en)}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+
+                          {/* Tiene imágenes */}
+                          <span
+                            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium ${
+                              item.tiene_imagenes
+                                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                : "border-amber-200 bg-amber-50 text-amber-700"
+                            }`}
+                          >
+                            <ImageIcon className="h-4 w-4" />
+                            {item.tiene_imagenes ? "Con imágenes" : "Sin imágenes"}
+                          </span>
+
+                          {/* Tiene documentos */}
+                          <span
+                            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium ${
+                              item.tiene_documentos
+                                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                : "border-amber-200 bg-amber-50 text-amber-700"
+                            }`}
+                          >
+                            <FileText className="h-4 w-4" />
+                            {item.tiene_documentos ? "Con documentos" : "Sin documentos"}
+                          </span>
+
+                          {/* 🔥 NUEVO: LISTA PARA REVISIÓN */}
+                          <span
+                            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium ${
+                              item.lista_para_revision
+                                ? "border-emerald-300 bg-emerald-100 text-emerald-800"
+                                : "border-rose-200 bg-rose-50 text-rose-700"
+                            }`}
+                          >
+                            {item.lista_para_revision
+                              ? "Lista para revisión"
+                              : "Información incompleta"}
+                          </span>
+
+                          {/* Botón ver */}
                           <Link
-                            href={`/terrenos/${item.id}`}
-                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                            href={`/admin/publicaciones/${item.id}`}
+                            className="ml-auto inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                           >
                             <Eye className="h-4 w-4" />
-                            Ver terreno
+                            Ver detalle
                           </Link>
-                        </td>
 
-                        <td className="px-4 py-4">
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              onClick={() =>
-                                abrirModalCambioEstado(item, "aprobado", false)
-                              }
-                              disabled={loadingEstado}
-                              className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-60"
-                            >
-                              Aprobar
-                            </button>
+                        </div>
+                      </div>
+                    </div>
 
-                            <button
-                              onClick={() =>
-                                abrirModalCambioEstado(item, "rechazado", true)
-                              }
-                              disabled={loadingEstado}
-                              className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 transition hover:bg-rose-100 disabled:opacity-60"
-                            >
-                              Rechazar
-                            </button>
+                    <div className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          Acciones rápidas
+                        </p>
+                        <p className="mt-1 text-sm text-slate-500">
+                          Flujo optimizado para revisión intensiva.
+                        </p>
+                      </div>
 
-                            <button
-                              onClick={() =>
-                                abrirModalCambioEstado(item, "pausado", false)
-                              }
-                              disabled={loadingEstado}
-                              className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 transition hover:bg-amber-100 disabled:opacity-60"
-                            >
-                              <PauseCircle className="h-4 w-4" />
-                              Pausar
-                            </button>
+                      <div className="grid grid-cols-3 gap-3">
+                        <IconActionButton
+                          onClick={() => abrirModalCambioEstado(item, "aprobado", false)}
+                          disabled={loadingEstado}
+                          title="Aprobar"
+                          className="border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                          icon={<Check className="h-5 w-5" />}
+                        />
 
-                            <button
-                              onClick={() => eliminarPublicacion(item.id)}
-                              disabled={loadingDelete}
-                              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-200 disabled:opacity-60"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              Borrados
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        <IconActionButton
+                          onClick={() => abrirModalCambioEstado(item, "rechazado", true)}
+                          disabled={loadingEstado}
+                          title="Rechazar"
+                          className="border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                          icon={<X className="h-5 w-5" />}
+                        />
+
+                        <IconActionButton
+                          onClick={() => abrirModalCambioEstado(item, "pausado", true)}
+                          disabled={loadingEstado}
+                          title="Pausar"
+                          className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                          icon={<PauseCircle className="h-5 w-5" />}
+                        />
+
+                        <IconActionButton
+                          onClick={() => abrirModalCambioEstado(item, "aprobado", false)}
+                          disabled={loadingEstado || item.estado !== "pausado"}
+                          title="Reactivar"
+                          className="border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100"
+                          icon={<RotateCcw className="h-5 w-5" />}
+                        />
+
+                        <IconActionButton
+                          onClick={() => eliminarPublicacion(item.id)}
+                          disabled={loadingDelete}
+                          title="Enviar a borrados"
+                          className="border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200"
+                          icon={<Trash2 className="h-5 w-5" />}
+                        />
+
+                        <Link
+                          href={`/admin/publicaciones/${item.id}`}
+                          title="Ver detalle"
+                          aria-label="Ver detalle"
+                          className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-100"
+                        >
+                          <Eye className="h-5 w-5" />
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              );
+            })
           )}
         </section>
       </div>
