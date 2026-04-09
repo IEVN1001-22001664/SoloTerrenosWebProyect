@@ -64,7 +64,13 @@ app.use(
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) {
+      const isExactAllowed = allowedOrigins.includes(origin);
+
+      const isVercelPreview =
+        origin.startsWith("https://solo-terrenos-web-proyect-") &&
+        origin.endsWith(".vercel.app");
+
+      if (isExactAllowed || isVercelPreview) {
         return callback(null, true);
       }
 
@@ -75,6 +81,8 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+
 // ======================================================
 // MIDDLEWARE PARA LEER JSON
 // ======================================================
