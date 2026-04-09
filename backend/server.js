@@ -101,9 +101,6 @@ app.use((req, res, next) => {
 // autenticación
 app.use("/api/auth", authRoutes);
 
-// terrenos
-app.use("/api/terrenos", terrenosRoutes);
-
 // administración
 app.use("/api/admin", adminRoutes);
 
