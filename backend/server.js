@@ -52,25 +52,33 @@ const app = express();
 app.use("/api/stripe/webhook", stripeWebhookRoutes);
 
 // ======================================================
-// MIDDLEWARE PARA LEER JSON
-// ======================================================
-
-app.use(express.json());
-
-// ======================================================
 // CONFIGURACIÓN CORS
 // ======================================================
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://solo-terrenos-web-proyect.vercel.app",
+];
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "https://solo-terrenos-web-proyect.vercel.app/",
-    ],
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`Origen no permitido por CORS: ${origin}`));
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-
+// ======================================================
+// MIDDLEWARE PARA LEER JSON
+// ======================================================
+app.use(express.json());
 // ======================================================
 // COOKIE PARSER
 // ======================================================
