@@ -63,6 +63,9 @@ export default function TerrainCard({
         <img
           src={image}
           alt={title}
+          onError={(e) => {
+            e.currentTarget.src = "/images/terreno-placeholder.png";
+          }}
           className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
 

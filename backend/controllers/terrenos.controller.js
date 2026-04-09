@@ -115,7 +115,7 @@ exports.getAllPublic = async (req, res) => {
           SELECT ti.url
           FROM terreno_imagenes ti
           WHERE ti.terreno_id = t.id
-          ORDER BY ti.id ASC
+          ORDER BY ti.orden ASC, ti.id ASC
           LIMIT 1
         ) AS imagen_principal
       FROM terrenos t
@@ -432,20 +432,48 @@ exports.searchTerrenos = async (req, res) => {
 
     const sql = `
       SELECT
-        id,
-        titulo,
-        descripcion,
-        precio,
-        ubicacion,
-        municipio,
-        estado_region,
-        tipo,
-        uso_suelo,
-        area_m2,
-        estado
-      FROM terrenos
-      WHERE ${conditions.join(" AND ")}
-      ORDER BY ${orderClause}
+        t.id,
+        t.titulo,
+        t.descripcion,
+        t.precio,
+        t.ubicacion,
+        t.municipio,
+        t.estado_region,
+        t.tipo,
+        t.uso_suelo,
+        t.area_m2,
+        t.estado,
+        img.url AS imagen_principal
+      FROM terrenos t
+      LEFT JOIN LATERAL (
+        SELECT ti.url
+        FROM terreno_imagenes ti
+        WHERE ti.terreno_id = t.id
+        ORDER BY ti.orden ASC, ti.id ASC
+        LIMIT 1
+      ) img ON true
+      WHERE ${conditions
+        .map((condition) =>
+          condition
+            .replace(/\bestado\b/g, "t.estado")
+            .replace(/\bsearch_vector\b/g, "t.search_vector")
+            .replace(/\btitulo\b/g, "t.titulo")
+            .replace(/\bdescripcion\b/g, "t.descripcion")
+            .replace(/\bubicacion\b/g, "t.ubicacion")
+            .replace(/\bmunicipio\b/g, "t.municipio")
+            .replace(/\bestado_region\b/g, "t.estado_region")
+            .replace(/\btipo\b/g, "t.tipo")
+            .replace(/\buso_suelo\b/g, "t.uso_suelo")
+            .replace(/\bprecio\b/g, "t.precio")
+            .replace(/\barea_m2\b/g, "t.area_m2")
+            .replace(/\bid\b/g, "t.id")
+        )
+        .join(" AND ")}
+      ORDER BY ${orderClause
+        .replace(/\bprecio\b/g, "t.precio")
+        .replace(/\btitulo\b/g, "t.titulo")
+        .replace(/\bid\b/g, "t.id")
+        .replace(/\bsearch_vector\b/g, "t.search_vector")}
     `;
 
     const result = await pool.query(sql, values);
@@ -469,7 +497,7 @@ exports.getDestacados = async (req, res) => {
           SELECT ti.url
           FROM terreno_imagenes ti
           WHERE ti.terreno_id = t.id
-          ORDER BY ti.id ASC
+          ORDER BY ti.orden ASC, ti.id ASC
           LIMIT 1
         ) AS imagen_principal
       FROM terrenos t
@@ -598,7 +626,19 @@ exports.getById = async (req, res) => {
   try {
 
     const result = await pool.query(
-      "SELECT * FROM terrenos WHERE id = $1 AND estado = 'aprobado'",
+      `
+      SELECT
+        t.*,
+        (
+          SELECT ti.url
+          FROM terreno_imagenes ti
+          WHERE ti.terreno_id = t.id
+          ORDER BY ti.orden ASC, ti.id ASC
+          LIMIT 1
+        ) AS imagen_principal
+      FROM terrenos t
+      WHERE t.id = $1 AND t.estado = 'aprobado'
+      `,
       [id]
     );
 

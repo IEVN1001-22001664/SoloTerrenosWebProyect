@@ -201,7 +201,7 @@ export default async function TerrenoDetalle({
 
   return (
     <main className="min-h-screen bg-[#f7f6f1] pb-16 pt-24">
-      <div className="mx-auto max-w-7xl px-4 md:px-6">
+      <div className="mx-auto w-full max-w-[1600px] px-4 md:px-6 xl:px-8 2xl:px-10">
         <div className="mb-6">
           <Link
             href="/terrenos"
@@ -212,10 +212,11 @@ export default async function TerrenoDetalle({
           </Link>
         </div>
 
-        {/* HERO PRINCIPAL */}
-        <section className="mb-10 overflow-hidden rounded-[2.25rem] border border-[#817d58]/15 bg-white shadow-sm">
-          <div className="grid gap-0 lg:grid-cols-[1.2fr_420px]">
-            <div className="bg-gradient-to-br from-[#22341c] via-[#2d4424] to-[#828d4b] px-6 py-8 text-white md:px-10 md:py-10">
+        {/* HERO + GALERÍA */}
+        <section className="mb-8 overflow-hidden rounded-[2.2rem] border border-[#817d58]/12 bg-white shadow-sm">
+          <div className="grid gap-0 xl:grid-cols-[minmax(0,1.08fr)_minmax(420px,0.92fr)]">
+            {/* PANEL IZQUIERDO */}
+            <div className="bg-gradient-to-br from-[#22341c] via-[#2d4424] to-[#828d4b] px-6 py-7 text-white md:px-8 xl:px-10 xl:py-9">
               <div className="mb-4 flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-white/14 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
                   {text(tipoVisible)}
@@ -228,7 +229,7 @@ export default async function TerrenoDetalle({
                 )}
               </div>
 
-              <h1 className="max-w-3xl text-3xl font-bold tracking-tight md:text-5xl">
+              <h1 className="max-w-4xl text-3xl font-bold leading-tight tracking-tight md:text-4xl xl:text-[2.8rem]">
                 {terreno.titulo}
               </h1>
 
@@ -237,12 +238,12 @@ export default async function TerrenoDetalle({
                 {ubicacionGeneral}
               </p>
 
-              <div className="mt-8 grid grid-cols-2 gap-4 md:max-w-2xl md:grid-cols-4">
+              <div className="mt-7 grid grid-cols-2 gap-3 xl:max-w-4xl xl:grid-cols-4">
                 <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
                   <p className="text-[11px] uppercase tracking-[0.16em] text-white/70">
                     Precio
                   </p>
-                  <p className="mt-1 text-base font-semibold">
+                  <p className="mt-1 text-sm font-semibold md:text-base">
                     {money(terreno.precio)}
                   </p>
                 </div>
@@ -251,7 +252,7 @@ export default async function TerrenoDetalle({
                   <p className="text-[11px] uppercase tracking-[0.16em] text-white/70">
                     Superficie
                   </p>
-                  <p className="mt-1 text-base font-semibold">
+                  <p className="mt-1 text-sm font-semibold md:text-base">
                     {areaText(terreno.area_m2)}
                   </p>
                 </div>
@@ -260,7 +261,7 @@ export default async function TerrenoDetalle({
                   <p className="text-[11px] uppercase tracking-[0.16em] text-white/70">
                     Uso de suelo
                   </p>
-                  <p className="mt-1 text-base font-semibold">
+                  <p className="mt-1 text-sm font-semibold md:text-base">
                     {text(terreno.uso_suelo)}
                   </p>
                 </div>
@@ -269,157 +270,184 @@ export default async function TerrenoDetalle({
                   <p className="text-[11px] uppercase tracking-[0.16em] text-white/70">
                     Tipo
                   </p>
-                  <p className="mt-1 text-base font-semibold">
+                  <p className="mt-1 text-sm font-semibold md:text-base">
                     {text(terreno.tipo_propiedad || terreno.tipo)}
                   </p>
                 </div>
               </div>
-            </div>
 
-            <aside className="border-t border-[#817d58]/12 bg-white lg:border-l lg:border-t-0">
-            <div className="border-b border-[#817d58]/12 px-6 py-6">
-              <p className="text-sm uppercase tracking-[0.14em] text-[#817d58]">
-                Información rápida
-              </p>
-              <p className="mt-2 text-3xl font-bold tracking-tight text-[#22341c]">
-                {money(terreno.precio)}
-              </p>
+              <div className="mt-7 grid gap-4 md:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_340px]">
+                <div className="rounded-[1.75rem] border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
+                  <p className="text-xs uppercase tracking-[0.14em] text-white/65">
+                    Resumen rápido
+                  </p>
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div className="rounded-2xl bg-white/10 px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-white/65">
+                        Perímetro
+                      </p>
+                      <p className="mt-1 text-sm font-semibold">
+                        {perimeterText(terreno.perimetro_m)}
+                      </p>
+                    </div>
 
-              {terreno.negociable === true && (
-                <p className="mt-2 text-sm font-medium text-[#828d4b]">
-                  El precio puede negociarse
-                </p>
-              )}
-            </div>
+                    <div className="rounded-2xl bg-white/10 px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-white/65">
+                        Topografía
+                      </p>
+                      <p className="mt-1 text-sm font-semibold">
+                        {text(terreno.topografia)}
+                      </p>
+                    </div>
 
-            <div className="space-y-3 px-6 py-6">
-              <FavoriteButton
-                terrenoId={terreno.id}
-                iconOnly={false}
-                redirectTo={`/terrenos/${terreno.id}`}
-                className="w-full justify-center rounded-2xl px-4 py-3"
-                activeClassName="bg-[#9f885c]/15 text-[#22341c] border-[#9f885c]/25"
-                inactiveClassName="bg-white text-[#22341c] border-[#817d58]/18"
-              />
+                    <div className="rounded-2xl bg-white/10 px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-white/65">
+                        Forma
+                      </p>
+                      <p className="mt-1 text-sm font-semibold">
+                        {text(terreno.forma)}
+                      </p>
+                    </div>
 
-              <TerrenoContactoActions terrenoId={terreno.id} />
-            </div>
+                    <div className="rounded-2xl bg-white/10 px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-white/65">
+                        Negociable
+                      </p>
+                      <p className="mt-1 text-sm font-semibold">
+                        {boolText(terreno.negociable)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-              <div className="border-t border-[#817d58]/12 px-6 py-6">
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <CircleDollarSign className="mt-0.5 text-[#828d4b]" size={18} />
-                    <p className="text-sm text-[#817d58]">
-                      Solicita más información sobre precio, condiciones y proceso de compra.
+                <div className="rounded-[1.75rem] border border-white/10 bg-white px-5 py-5 text-[#22341c] shadow-sm">
+                  <p className="text-xs uppercase tracking-[0.14em] text-[#817d58]">
+                    Información rápida
+                  </p>
+                  <p className="mt-2 text-3xl font-bold tracking-tight">
+                    {money(terreno.precio)}
+                  </p>
+
+                  {terreno.negociable === true && (
+                    <p className="mt-2 text-sm font-medium text-[#828d4b]">
+                      El precio puede negociarse
                     </p>
+                  )}
+
+                  <div className="mt-5 space-y-3">
+                    <FavoriteButton
+                      terrenoId={terreno.id}
+                      iconOnly={false}
+                      redirectTo={`/terrenos/${terreno.id}`}
+                      className="w-full justify-center rounded-2xl px-4 py-3"
+                      activeClassName="bg-[#9f885c]/15 text-[#22341c] border-[#9f885c]/25"
+                      inactiveClassName="bg-white text-[#22341c] border-[#817d58]/18"
+                    />
+
+                    <TerrenoContactoActions terrenoId={terreno.id} />
                   </div>
 
-                  <div className="flex items-start gap-3">
-                    <BadgeCheck className="mt-0.5 text-[#828d4b]" size={18} />
-                    <p className="text-sm text-[#817d58]">
-                      Revisa ubicación, superficie y situación legal antes de tomar una decisión.
-                    </p>
+                  <div className="mt-5 space-y-3 border-t border-[#817d58]/12 pt-5">
+                    <div className="flex items-start gap-3">
+                      <CircleDollarSign className="mt-0.5 text-[#828d4b]" size={18} />
+                      <p className="text-sm text-[#817d58]">
+                        Solicita más información sobre precio, condiciones y proceso de compra.
+                      </p>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <BadgeCheck className="mt-0.5 text-[#828d4b]" size={18} />
+                      <p className="text-sm text-[#817d58]">
+                        Revisa ubicación, superficie y situación legal antes de tomar una decisión.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </aside>
+            </div>
+
+            {/* PANEL DERECHO / GALERÍA */}
+            <div className="border-t border-[#817d58]/12 bg-[#f7f6f1] p-4 md:p-5 xl:border-l xl:border-t-0 xl:p-6">
+              <div className="grid h-full gap-4 xl:grid-cols-[minmax(0,1fr)_220px]">
+                <div className="relative overflow-hidden rounded-[1.9rem] bg-white">
+                  <img
+                    src={portada}
+                    alt={terreno.titulo}
+                    className="h-[320px] w-full object-cover md:h-[420px] xl:h-full xl:min-h-[620px]"
+                  />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 xl:grid-cols-1">
+                  {(secundarias.length > 0 ? secundarias : [1, 2, 3, 4].map((item) => ({ id: item, url: portada }))).map((imagen) => (
+                    <div
+                      key={imagen.id}
+                      className="overflow-hidden rounded-[1.35rem] bg-white"
+                    >
+                      <img
+                        src={imagen.url}
+                        alt="Imagen del terreno"
+                        className="h-[110px] w-full object-cover md:h-[120px] xl:h-[145px]"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* GALERÍA */}
-        <section className="mb-10">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-[1.65fr_1fr]">
-            <div className="relative overflow-hidden rounded-[2rem]">
-              <img
-                src={portada}
-                alt={terreno.titulo}
-                className="h-[340px] w-full object-cover md:h-[540px]"
-              />
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
-            </div>
+        {/* MAPA + DESCRIPCIÓN */}
+        <div className="mb-8 grid gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
+          {tieneMapa && (
+            <section className="rounded-[2rem] border border-[#817d58]/15 bg-white p-5 shadow-sm md:p-6 xl:p-7">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#9f885c]/15 text-[#22341c]">
+                  <Map size={20} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-[#22341c] md:text-2xl">
+                    Ubicación del terreno
+                  </h2>
+                  <p className="text-sm text-[#817d58]">
+                    Referencia visual del polígono registrado
+                  </p>
+                </div>
+              </div>
 
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-1">
-              {secundarias.length > 0 ? (
-                secundarias.map((imagen) => (
-                  <div
-                    key={imagen.id}
-                    className="overflow-hidden rounded-[1.5rem]"
-                  >
-                    <img
-                      src={imagen.url}
-                      alt="Imagen del terreno"
-                      className="h-[162px] w-full object-cover md:h-[123px]"
-                    />
-                  </div>
-                ))
-              ) : (
-                [1, 2, 3, 4].map((item) => (
-                  <div
-                    key={item}
-                    className="overflow-hidden rounded-[1.5rem]"
-                  >
-                    <img
-                      src={portada}
-                      alt="Imagen del terreno"
-                      className="h-[162px] w-full object-cover opacity-90 md:h-[123px]"
-                    />
-                  </div>
-                ))
+              <div className="overflow-hidden rounded-[1.5rem] border border-[#817d58]/12">
+                <div className="h-[320px] md:h-[430px] xl:h-[500px]">
+                  <TerrenoMapWrapper
+                    coordinates={terreno.poligono as LatLngTuple[]}
+                  />
+                </div>
+              </div>
+            </section>
+          )}
+
+          <section className="rounded-[2rem] border border-[#817d58]/15 bg-white p-5 shadow-sm md:p-6 xl:p-7">
+            <h2 className="text-xl font-semibold text-[#22341c] md:text-2xl">
+              Descripción del terreno
+            </h2>
+
+            <p className="mt-5 whitespace-pre-line text-sm leading-7 text-[#4f4a3d] md:text-[15px] xl:text-base">
+              {text(
+                terreno.descripcion,
+                "Este terreno no cuenta con una descripción detallada por el momento."
               )}
-            </div>
-          </div>
-        </section>
-
-        {/* MAPA */}
-        {tieneMapa && (
-          <section className="mb-10 rounded-[2rem] border border-[#817d58]/15 bg-white p-6 shadow-sm md:p-8">
-            <div className="mb-5 flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#9f885c]/15 text-[#22341c]">
-                <Map size={20} />
-              </div>
-              <div>
-                <h2 className="text-2xl font-semibold text-[#22341c]">
-                  Ubicación del terreno
-                </h2>
-                <p className="text-sm text-[#817d58]">
-                  Referencia visual del polígono registrado
-                </p>
-              </div>
-            </div>
-
-            <div className="overflow-hidden rounded-[1.5rem] border border-[#817d58]/12">
-              <div className="h-[340px] md:h-[460px]">
-                <TerrenoMapWrapper
-                  coordinates={terreno.poligono as LatLngTuple[]}
-                />
-              </div>
-            </div>
+            </p>
           </section>
-        )}
-
-        {/* DESCRIPCIÓN */}
-        <section className="mb-10 rounded-[2rem] border border-[#817d58]/15 bg-white p-6 shadow-sm md:p-8">
-          <h2 className="text-2xl font-semibold text-[#22341c]">
-            Descripción del terreno
-          </h2>
-
-          <p className="mt-5 whitespace-pre-line leading-8 text-[#4f4a3d]">
-            {text(
-              terreno.descripcion,
-              "Este terreno no cuenta con una descripción detallada por el momento."
-            )}
-          </p>
-        </section>
+        </div>
 
         {/* INFORMACIÓN COMPLEMENTARIA */}
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]">
-          <div className="space-y-10">
-            <section className="rounded-[2rem] border border-[#817d58]/15 bg-white p-6 shadow-sm md:p-8">
-              <h2 className="text-2xl font-semibold text-[#22341c]">
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
+          <div className="space-y-8">
+            <section className="rounded-[2rem] border border-[#817d58]/15 bg-white p-5 shadow-sm md:p-6 xl:p-7">
+              <h2 className="text-xl font-semibold text-[#22341c] md:text-2xl">
                 Datos principales
               </h2>
 
-              <div className="mt-6 grid gap-4 md:grid-cols-2">
+              <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <div className="rounded-2xl bg-[#f7f6f1] p-5">
                   <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#9f885c]/15 text-[#22341c]">
                     <Ruler size={18} />
@@ -462,12 +490,12 @@ export default async function TerrenoDetalle({
               </div>
             </section>
 
-            <section className="rounded-[2rem] border border-[#817d58]/15 bg-white p-6 shadow-sm md:p-8">
-              <h2 className="text-2xl font-semibold text-[#22341c]">
+            <section className="rounded-[2rem] border border-[#817d58]/15 bg-white p-5 shadow-sm md:p-6 xl:p-7">
+              <h2 className="text-xl font-semibold text-[#22341c] md:text-2xl">
                 Ubicación
               </h2>
 
-              <div className="mt-6 grid gap-4 md:grid-cols-2">
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
                 <div className="rounded-2xl bg-[#f7f6f1] p-5">
                   <p className="text-sm text-[#817d58]">Ubicación general</p>
                   <p className="mt-1 font-semibold text-[#22341c]">
@@ -513,13 +541,13 @@ export default async function TerrenoDetalle({
             </section>
           </div>
 
-          <div className="space-y-10">
-            <section className="rounded-[2rem] border border-[#817d58]/15 bg-white p-6 shadow-sm md:p-8">
-              <h2 className="text-2xl font-semibold text-[#22341c]">
+          <div className="space-y-8">
+            <section className="rounded-[2rem] border border-[#817d58]/15 bg-white p-5 shadow-sm md:p-6 xl:p-7">
+              <h2 className="text-xl font-semibold text-[#22341c] md:text-2xl">
                 Información legal y comercial
               </h2>
 
-              <div className="mt-6 grid gap-4">
+              <div className="mt-5 grid gap-4">
                 <div className="rounded-2xl bg-[#f7f6f1] p-5">
                   <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#9f885c]/15 text-[#22341c]">
                     <Home size={18} />

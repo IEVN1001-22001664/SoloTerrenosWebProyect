@@ -121,6 +121,7 @@ export default function TerrenosPage() {
 
   useEffect(() => {
     const params = new URLSearchParams();
+    
 
     if (busqueda.trim()) params.set("search", busqueda.trim());
     if (filtroUbicacion !== "todas") params.set("ubicacion", filtroUbicacion);
@@ -183,6 +184,7 @@ export default function TerrenosPage() {
         );
       });
     }
+
 
     if (filtroUbicacion !== "todas") {
       const ubicacionFiltro = normalizeText(filtroUbicacion);
@@ -287,10 +289,18 @@ export default function TerrenosPage() {
     filtroTamano !== "todos" ||
     orden !== "recientes";
 
-  const getImagenTerreno = (img?: string) => {
-    if (!img) return "/images/terreno-placeholder.jpg";
-    if (img.startsWith("http")) return img;
-    return `${API_URL}${img}`;
+  const getImagenTerreno = (img?: string | null) => {
+    if (!img || !img.trim()) return "/images/terreno-placeholder.png";
+
+    if (img.startsWith("http://") || img.startsWith("https://")) {
+      return img;
+    }
+
+    if (img.startsWith("/")) {
+      return `${API_URL}${img}`;
+    }
+
+    return `${API_URL}/${img}`;
   };
 
   const Filtros = () => (
@@ -361,7 +371,7 @@ export default function TerrenosPage() {
 
   return (
     <main className="min-h-screen bg-[#f7f6f1] px-4 pb-14 pt-20 md:px-6">
-      <section className="mx-auto max-w-7xl">
+      <section className="container-page-wide">
         <div className="mb-6 overflow-hidden rounded-[2rem] border border-[#817d58]/12 bg-white shadow-sm">
           <div className="bg-gradient-to-r from-[#22341c] via-[#2f4727] to-[#828d4b] px-6 py-8 text-white md:px-8 md:py-10">
             <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white/95">
@@ -432,7 +442,7 @@ export default function TerrenosPage() {
         </div>
 
         <div className="mb-8 hidden rounded-[1.75rem] border border-[#817d58]/12 bg-white p-3 shadow-sm md:block">
-          <div className="grid grid-cols-[1.6fr_repeat(5,minmax(0,1fr))] gap-3">
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(320px,1.8fr)_repeat(5,minmax(140px,1fr))]">
             <div className="flex h-11 items-center gap-2 rounded-xl border border-[#817d58]/18 bg-[#f7f6f1] px-3">
               <Search size={16} className="text-[#817d58]" />
               <input
@@ -499,7 +509,7 @@ export default function TerrenosPage() {
             </p>
           </div>
         ) : (
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
             {terrenosFiltrados.map((terreno, index) => {
               const imagen = getImagenTerreno(terreno.imagen_principal);
 
@@ -527,6 +537,9 @@ export default function TerrenosPage() {
                       src={imagen}
                       alt={terreno.titulo}
                       loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.src = "/images/terreno-placeholder.jpg";
+                      }}
                       className="h-56 w-full object-cover transition duration-700 ease-out group-hover:scale-[1.04]"
                     />
 

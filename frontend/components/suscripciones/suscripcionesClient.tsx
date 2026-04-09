@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import AsignarSuscripcionModal from "../admin/asignarSuscripcionModal";
 import {
   BadgeCheck,
   CalendarClock,
@@ -47,7 +46,6 @@ export default function SuscripcionesClient() {
   const [planes, setPlanes] = useState<Plan[]>([]);
   const [error, setError] = useState("");
   const searchParams = useSearchParams();
-  const [openModal, setOpenModal] = useState(false);
 
   const bloqueo = searchParams.get("bloqueo");
   const motivoBloqueo = searchParams.get("motivo");
