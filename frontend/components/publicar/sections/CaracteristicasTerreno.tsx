@@ -11,15 +11,18 @@ export default function CaracteristicasTerreno({ formData, setFormData }: Props)
   /* MANEJAR CAMBIOS              */
   /* ============================= */
 
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
-
-    const { name, value, type, checked } = e.target;
+  const handleChange = (
+    e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>
+  ) => {
+    const target = e.target;
+    const { name, value } = target;
 
     setFormData({
       ...formData,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: target instanceof HTMLInputElement && target.type === "checkbox"
+        ? target.checked
+        : value,
     });
-
   };
 
   return (

@@ -20,7 +20,7 @@ import ChangePasswordModal from "@/components/profile/changePasswordModal";
 import ProfileAvatar from "@/components/profile/profileAvatar";
 import ProfileImageModal from "@/components/profile/profileImageModal";
 
-const API_URL = "http://localhost:5000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 export default function ColaboradorPerfilPage() {
   const { user, loading, updateUser, refreshUser } = useAuth();

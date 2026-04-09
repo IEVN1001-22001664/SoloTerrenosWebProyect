@@ -1,7 +1,5 @@
 "use client";
-
-import { useEffect, useState } from "react";
-import { Bookmark } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import ContactarVendedorModal from "@/components/terrenos/contactarVendedorModal";
@@ -16,17 +14,16 @@ export default function TerrenoContactoActions({ terrenoId }: Props) {
   const searchParams = useSearchParams();
   const { user, loading } = useAuth();
 
-  const [openLeadModal, setOpenLeadModal] = useState(false);
+  const [openLeadModalManual, setOpenLeadModalManual] = useState(false);
 
-  useEffect(() => {
-    if (loading) return;
+  const openFromQuery = useMemo(() => {
+    if (loading) return false;
 
     const action = searchParams.get("action");
-
-    if (user && user.rol === "usuario" && action === "contactar") {
-      setOpenLeadModal(true);
-    }
+    return Boolean(user && user.rol === "usuario" && action === "contactar");
   }, [user, loading, searchParams]);
+
+  const openLeadModal = openLeadModalManual || openFromQuery;
 
   const limpiarActionDeUrl = () => {
     const params = new URLSearchParams(searchParams.toString());
@@ -51,16 +48,17 @@ export default function TerrenoContactoActions({ terrenoId }: Props) {
       return;
     }
 
-    setOpenLeadModal(true);
+    setOpenLeadModalManual(true);
   };
 
   const handleCloseModal = () => {
-    setOpenLeadModal(false);
+    setOpenLeadModalManual(false);
 
     if (searchParams.get("action") === "contactar") {
       limpiarActionDeUrl();
     }
   };
+
   return (
     <>
       <button
@@ -71,7 +69,6 @@ export default function TerrenoContactoActions({ terrenoId }: Props) {
       >
         Contactar vendedor
       </button>
-
 
       <ContactarVendedorModal
         open={openLeadModal}

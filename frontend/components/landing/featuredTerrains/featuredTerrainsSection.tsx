@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import TerrainCard from "./terrainCard";
 
-const API_URL = "http://localhost:5000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 const CARD_WIDTH_MOBILE = 300 + 24; // ancho + gap
 const CARD_WIDTH_DESKTOP = 320 + 24;
 

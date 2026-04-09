@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -374,24 +374,15 @@ export default function ZonasMap({
   const markerRefs = useRef<Record<number, LeafletMarker | null>>({});
   const [currentZoom, setCurrentZoom] = useState<number>(MEXICO_ZOOM);
   const [activePolygonId, setActivePolygonId] = useState<number | null>(null);
+  const visiblePolygonId = useMemo(() => {
+  if (focusRequest) return null;
+  if (openPopupId !== null) return null;
+  return activePolygonId;
+}, [activePolygonId, focusRequest, openPopupId]);
 
   const isSatellite = Boolean(MAPBOX_TOKEN) && currentZoom >= 18;
   const effectiveInitialCenter = initialCenter ?? MEXICO_CENTER;
   const effectiveInitialZoom = initialZoom ?? MEXICO_ZOOM;
-
-  // Si cambia el interés a otra tarjeta o marker, ocultamos polígono
-  useEffect(() => {
-    if (focusRequest) {
-      setActivePolygonId(null);
-    }
-  }, [focusRequest]);
-
-  // Si se abre un popup, ocultamos polígono
-  useEffect(() => {
-    if (openPopupId !== null) {
-      setActivePolygonId(null);
-    }
-  }, [openPopupId]);
 
   useEffect(() => {
     Object.entries(markerRefs.current).forEach(([id, marker]) => {
@@ -436,7 +427,7 @@ export default function ZonasMap({
         <FocusSelectedTerreno terrenos={terrenos} focusRequest={focusRequest} />
         <ActivePolygonOverlay
           terrenos={terrenos}
-          activePolygonId={activePolygonId}
+          activePolygonId={visiblePolygonId}
         />
 
         {userLocation && (

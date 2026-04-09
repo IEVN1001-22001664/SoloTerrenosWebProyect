@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { LatLngTuple } from "leaflet";
 import Link from "next/link";
 import TerrenoMapWrapper from "./TerrenoMapWrapper";
@@ -344,7 +345,9 @@ export default async function TerrenoDetalle({
                       inactiveClassName="bg-white text-[#22341c] border-[#817d58]/18"
                     />
 
-                    <TerrenoContactoActions terrenoId={terreno.id} />
+                    <Suspense fallback={null}>
+                      <TerrenoContactoActions terrenoId={terreno.id} />
+                    </Suspense>
                   </div>
 
                   <div className="mt-5 space-y-3 border-t border-[#817d58]/12 pt-5">

@@ -41,7 +41,7 @@ interface ConversacionResumen {
   no_leidos?: string | number;
 }
 
-const API_URL = "http://localhost:5000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 export default function Navbar() {
   const router = useRouter();

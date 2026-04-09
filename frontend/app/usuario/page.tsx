@@ -16,7 +16,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { getSocket } from "@/src/lib/socket";
 
-const API_URL = "http://localhost:5000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 interface Notificacion {
   id: number;

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -10,8 +9,6 @@ import {
 } from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import "leaflet-draw/dist/leaflet.draw.css";
 
 function ResizeMap() {
   const map = useMap();
@@ -306,11 +303,6 @@ export default function MapComponent({
 
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
   const mapboxUrl = `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`;
-
-  useEffect(() => {
-    setCoordinates(initialPolygon || null);
-  }, [initialPolygon]);
-
   const hasPolygon = Boolean(initialPolygon && initialPolygon.length > 0);
 
   return (

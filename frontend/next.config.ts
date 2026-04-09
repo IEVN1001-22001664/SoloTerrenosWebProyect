@@ -5,18 +5,15 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "images.unsplash.com",
-      },
-      {
-        protocol: "https",
-        hostname: "picsum.photos",
+        hostname: "soloterrenos-api.onrender.com",
+        pathname: "/uploads/**",
       },
       {
         protocol: "http",
         hostname: "localhost",
         port: "5000",
         pathname: "/uploads/**",
-      }
+      },
     ],
   },
 };

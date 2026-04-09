@@ -4,21 +4,22 @@ import Image from "next/image";
 import { useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 
-const API_URL = "http://localhost:5000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 export default function ProfileMenu() {
   const { user } = useAuth();
 
   const fotoPerfilUrl = useMemo(() => {
     if (!user?.foto_perfil) return "";
-    return `${API_URL}${user.foto_perfil}?t=${Date.now()}`;
-  }, [user?.foto_perfil]);
 
-  const nombreMostrar =
-    user?.nombre || user?.email || "Perfil";
+    const cacheKey = user.foto_cache_key ?? "default";
+    return `${API_URL}${user.foto_perfil}?t=${cacheKey}`;
+  }, [user?.foto_perfil, user?.foto_cache_key]);
+
+  const nombreMostrar = user?.nombre || user?.email || "Perfil";
 
   return (
-    <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition">
+    <div className="flex cursor-pointer items-center gap-3 transition hover:opacity-80">
       {fotoPerfilUrl ? (
         <Image
           src={fotoPerfilUrl}

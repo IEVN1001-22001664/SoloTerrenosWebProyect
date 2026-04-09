@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { X } from "lucide-react";
 
 interface Props {
@@ -24,17 +24,20 @@ export default function CambiarEstadoPublicacionModal({
 }: Props) {
   const [mensaje, setMensaje] = useState("");
 
-  useEffect(() => {
-    if (!open) {
-      setMensaje("");
-    }
-  }, [open]);
-
   if (!open) return null;
 
+  const handleClose = () => {
+    setMensaje("");
+    onClose();
+  };
+
   const handleConfirm = async () => {
-    if (requiereMensaje && !mensaje.trim()) return;
-    await onConfirm(mensaje.trim());
+    const mensajeLimpio = mensaje.trim();
+
+    if (requiereMensaje && !mensajeLimpio) return;
+
+    await onConfirm(mensajeLimpio);
+    setMensaje("");
   };
 
   return (
@@ -51,7 +54,7 @@ export default function CambiarEstadoPublicacionModal({
           </div>
 
           <button
-            onClick={onClose}
+            onClick={handleClose}
             disabled={loading}
             className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-60"
           >
@@ -86,7 +89,7 @@ export default function CambiarEstadoPublicacionModal({
 
         <div className="flex flex-col-reverse gap-3 border-t border-slate-200 px-6 py-4 sm:flex-row sm:justify-end">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             disabled={loading}
             className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
           >

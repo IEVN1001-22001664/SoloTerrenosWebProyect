@@ -12,11 +12,14 @@ export default function InfoLegal({ formData, setFormData }: Props) {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    const { name, value, type, checked } = e.target;
+    const target = e.target;
+    const { name, value } = target;
 
     setFormData({
       ...formData,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: target instanceof HTMLInputElement && target.type === "checkbox"
+        ? target.checked
+        : value,
     });
   };
 
