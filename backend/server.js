@@ -9,12 +9,90 @@ require("dotenv").config();
 const cookieParser = require("cookie-parser");
 const { initSocket } = require("./socket");
 
-console.log("--- DEBUG DE VARIABLES EN LA MAC ---");
-console.log("Host:", process.env.DB_HOST);
-console.log("User:", process.env.DB_USER);
-console.log("Password exists:", !!process.env.DB_PASSWORD);
-console.log("Port:", process.env.DB_PORT);
-console.log("------------------------------------");
+// ======================================================
+// SISTEMA DE DIAGNOSTICO INICIAL
+// ======================================================
+
+function detectRuntimeEnvironment() {
+  const frontendUrl = process.env.FRONTEND_URL || "";
+  const backendUrl = process.env.BACKEND_URL || "";
+  const databaseUrl = process.env.DATABASE_URL || "";
+  const isRender = Boolean(process.env.RENDER);
+  const isVercelFrontend =
+    frontendUrl.includes("vercel.app") || frontendUrl.startsWith("https://");
+  const isLocalFrontend = frontendUrl.includes("localhost");
+  const isSupabase = databaseUrl.includes("supabase");
+  const isPooler = databaseUrl.includes("pooler");
+  const useSSL = process.env.DB_SSL === "true";
+
+  let modo = "DESCONOCIDO";
+
+  if (isRender) {
+    modo = "PRODUCCION_RENDER";
+  } else if (isLocalFrontend) {
+    modo = "LOCAL";
+  } else if (isVercelFrontend) {
+    modo = "REMOTO_PERSONALIZADO";
+  }
+
+  return {
+    modo,
+    isRender,
+    isSupabase,
+    isPooler,
+    useSSL,
+    frontendUrl,
+    backendUrl,
+    databaseUrl,
+  };
+}
+
+function maskDatabaseUrl(connectionString = "") {
+  if (!connectionString) return "NO DEFINIDA";
+
+  try {
+    const url = new URL(connectionString);
+    const user = url.username || "usuario";
+    const host = url.hostname || "host";
+    const port = url.port || "puerto";
+    const dbName = url.pathname?.replace("/", "") || "database";
+
+    return `${url.protocol}//${user}:******@${host}:${port}/${dbName}`;
+  } catch {
+    return "FORMATO INVALIDO";
+  }
+}
+
+function printBootChecklist() {
+  const env = detectRuntimeEnvironment();
+
+  console.log("\n==================================================");
+  console.log("CHECKLIST DE ARRANQUE - SOLOTERRENOS BACKEND");
+  console.log("==================================================");
+  console.log(`Modo detectado: ${env.modo}`);
+  console.log(`Render detectado: ${env.isRender ? "SI" : "NO"}`);
+  console.log(`Frontend URL: ${env.frontendUrl || "NO DEFINIDA"}`);
+  console.log(`Backend URL: ${env.backendUrl || "NO DEFINIDA"}`);
+  console.log(`JWT_SECRET configurado: ${process.env.JWT_SECRET ? "SI" : "NO"}`);
+  console.log(`Stripe Secret configurado: ${process.env.STRIPE_SECRET_KEY ? "SI" : "NO"}`);
+  console.log(`Stripe Webhook configurado: ${process.env.STRIPE_WEBHOOK_SECRET ? "SI" : "NO"}`);
+  console.log(`DATABASE_URL configurada: ${process.env.DATABASE_URL ? "SI" : "NO"}`);
+  console.log(`DB_SSL configurado: ${process.env.DB_SSL || "NO DEFINIDO"}`);
+  console.log(`Base de datos Supabase: ${env.isSupabase ? "SI" : "NO"}`);
+  console.log(`Usando pooler Supabase: ${env.isPooler ? "SI" : "NO"}`);
+  console.log(`SSL activo para DB: ${env.useSSL ? "SI" : "NO"}`);
+  console.log(`DATABASE_URL (oculta): ${maskDatabaseUrl(env.databaseUrl)}`);
+
+  console.log("\nRECOMENDACIONES ESPERADAS:");
+  console.log(`- LOCAL: FRONTEND_URL=http://localhost:3000`);
+  console.log(`- LOCAL: BACKEND_URL=http://localhost:5000`);
+  console.log(`- LOCAL/PROD con Supabase pooler: DATABASE_URL debe incluir 'pooler.supabase.com'`);
+  console.log(`- LOCAL/PROD con Supabase pooler: DB_SSL=true`);
+  console.log(`- PRODUCCION: FRONTEND_URL debe ser tu dominio Vercel sin slash final`);
+  console.log("==================================================\n");
+}
+
+printBootChecklist();
 
 // ======================================================
 // IMPORTACIÓN DE BASE DE DATOS
@@ -22,6 +100,21 @@ console.log("------------------------------------");
 
 const pool = require("./db");
 
+// ======================================================
+// DIAGNOSTICO DE CONEXION A BASE DE DATOS
+// ======================================================
+
+
+async function verifyDatabaseConnection() {
+  try {
+    const result = await pool.query("SELECT NOW() AS now");
+    console.log("✅ Conexión a PostgreSQL: OK");
+    console.log(`🕒 Hora de la base de datos: ${result.rows[0].now}`);
+  } catch (error) {
+    console.log("❌ Conexión a PostgreSQL: FALLÓ");
+    console.log(`Motivo: ${error.message}`);
+  }
+}
 // ======================================================
 // IMPORTACIÓN DE RUTAS DEL SISTEMA
 // ======================================================
@@ -98,7 +191,8 @@ app.use(cookieParser());
 // ======================================================
 
 app.use((req, res, next) => {
-  console.log("Petición recibida en backend:", req.method, req.url);
+  const origin = req.headers.origin || "sin origin";
+  console.log(`➡️ ${req.method} ${req.url} | Origin: ${origin}`);
   next();
 });
 
@@ -184,11 +278,16 @@ initSocket(server);
 
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, "0.0.0.0", () => {
-  console.log("=================================");
-  console.log(`Servidor corriendo en puerto ${PORT}`);
-  console.log(`http://localhost:${PORT}`);
-  console.log(`Servidor de SoloTerrenos activo en http://0.0.0.0:${PORT}`);
+server.listen(PORT, "0.0.0.0", async () => {
+  console.log("==================================================");
+  console.log("SERVIDOR SOLOTERRENOS INICIALIZADO");
+  console.log("==================================================");
+  console.log(`Puerto: ${PORT}`);
+  console.log(`URL local sugerida: http://localhost:${PORT}`);
+  console.log(`Escuchando en: http://0.0.0.0:${PORT}`);
   console.log("Socket.IO inicializado correctamente");
-  console.log("=================================");
+
+  await verifyDatabaseConnection();
+
+  console.log("==================================================\n");
 });
