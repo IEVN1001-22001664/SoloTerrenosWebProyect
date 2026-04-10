@@ -159,7 +159,9 @@ export default function TerrenosPage() {
   }, [terrenos]);
 
   const terrenosFiltrados = useMemo(() => {
-    let resultado = [...terrenos];
+    let resultado = terrenos.filter(
+    (t) => t.estado?.toLowerCase() === "aprobado"
+  );
 
     if (busqueda.trim()) {
       const texto = normalizeText(busqueda);
