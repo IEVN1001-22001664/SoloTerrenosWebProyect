@@ -5,6 +5,8 @@ import Link from "next/link";
 import MisTerrenosLista from "@/components/misTerrenos/misTerrenosLista";
 import FiltrosMisTerrenos from "@/components/misTerrenos/filtrosMisTerrenos";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
 export default function MisTerrenosPage() {
   const [terrenos, setTerrenos] = useState<any[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -21,7 +23,7 @@ export default function MisTerrenosPage() {
         setError("");
 
         const response = await fetch(
-          "http://localhost:5000/api/terrenos/mis-terrenos",
+          `${API_URL}/api/terrenos/mis-terrenos`,
           {
             method: "GET",
             credentials: "include",

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -32,7 +32,7 @@ export default function ChangePasswordModal({ open, onClose }: Props) {
       setLoading(true);
 
       const response = await fetch(
-        "http://localhost:5000/api/auth/change-password",
+        `${API_URL}/api/auth/change-password`,
         {
           method: "PUT",
           credentials: "include",

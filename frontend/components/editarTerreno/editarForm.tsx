@@ -9,6 +9,7 @@ import CaracteristicasTerreno from "@/components/publicar/sections/Caracteristic
 import InfoLegal from "@/components/publicar/sections/infoLegal";
 import ImagenesTerreno from "@/components/publicar/sections/imagenesTerreno";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 interface Props {
   terrenoId: string;
   formData: any;
@@ -35,7 +36,7 @@ export default function EditarForm({
       /* 1. ACTUALIZAR TERRENO         */
       /* ============================= */
       const response = await fetch(
-        `http://localhost:5000/api/terrenos/${terrenoId}`,
+        `${API_URL}/api/terrenos/${terrenoId}`,
         {
           method: "PUT",
           credentials: "include",
@@ -93,7 +94,7 @@ export default function EditarForm({
       ) {
         for (const imagenId of formData.imagenesEliminadas) {
           const responseEliminarImagen = await fetch(
-            `http://localhost:5000/api/imagenes/${imagenId}`,
+            `${API_URL}/api/imagenes/${imagenId}`,
             {
               method: "DELETE",
               credentials: "include",
@@ -119,7 +120,7 @@ export default function EditarForm({
         });
 
         const responseImagenes = await fetch(
-          `http://localhost:5000/api/terrenos/${terrenoId}/imagenes`,
+          `${API_URL}/api/terrenos/${terrenoId}/imagenes`,
           {
             method: "POST",
             credentials: "include",
@@ -143,7 +144,7 @@ export default function EditarForm({
       ) {
         for (const documentoId of formData.documentosEliminados) {
           const responseEliminarDocumento = await fetch(
-            `http://localhost:5000/api/documentos/${documentoId}`,
+            `${API_URL}/api/documentos/${documentoId}`,
             {
               method: "DELETE",
               credentials: "include",
@@ -169,7 +170,7 @@ export default function EditarForm({
         });
 
         const responseDocumentos = await fetch(
-          `http://localhost:5000/api/terrenos/${terrenoId}/documentos`,
+          `${API_URL}/api/terrenos/${terrenoId}/documentos`,
           {
             method: "POST",
             credentials: "include",

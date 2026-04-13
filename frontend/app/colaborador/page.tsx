@@ -17,6 +17,7 @@ import {
   FileWarning,
 } from "lucide-react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 interface Terreno {
   id: number;
   titulo: string;
@@ -74,16 +75,16 @@ export default function ColaboradorDashboardPage() {
 
         const [resTerrenos, resLeads, resConversaciones, resNotificaciones] =
           await Promise.all([
-            fetch("http://localhost:5000/api/terrenos/mis-terrenos", {
+            fetch(`${API_URL}/api/terrenos/mis-terrenos`, {
               credentials: "include",
             }),
-            fetch("http://localhost:5000/api/leads/mis-leads", {
+            fetch(`${API_URL}/api/leads/mis-leads`, {
               credentials: "include",
             }),
-            fetch("http://localhost:5000/api/conversaciones/mias", {
+            fetch(`${API_URL}/api/conversaciones/mias`, {
               credentials: "include",
             }),
-            fetch("http://localhost:5000/api/notificaciones/mis-notificaciones", {
+            fetch(`${API_URL}/api/notificaciones/mis-notificaciones`, {
               credentials: "include",
             }),
           ]);
@@ -168,7 +169,7 @@ export default function ColaboradorDashboardPage() {
   const getImageUrl = (img?: string) => {
     if (!img) return "https://via.placeholder.com/400x260?text=Terreno";
     if (img.startsWith("http")) return img;
-    return `http://localhost:5000${img}`;
+    return `${API_URL}${img}`;
   };
 
   const getEstadoPill = (estado: string) => {

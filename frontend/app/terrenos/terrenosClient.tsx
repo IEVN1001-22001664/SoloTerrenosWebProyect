@@ -13,6 +13,7 @@ import {
   LandPlot,
 } from "lucide-react";
 import FavoriteButton from "@/components/terrenos/favoriteButton";
+import { API_URL, getImageUrl } from "@/src/lib/api";
 
 interface Terreno {
   id: number;
@@ -28,8 +29,6 @@ interface Terreno {
   imagen_principal?: string;
   estado?: string;
 }
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 function normalizeText(value?: string) {
   return (value || "")
@@ -65,43 +64,43 @@ export default function TerrenosPage() {
   const [orden, setOrden] = useState(searchParams.get("orden") || "recientes");
 
   useEffect(() => {
-  const fetchTerrenos = async () => {
-    try {
-      setCargando(true);
+    const fetchTerrenos = async () => {
+      try {
+        setCargando(true);
 
-      const params = new URLSearchParams();
+        const params = new URLSearchParams();
 
-      if (busqueda.trim()) params.set("q", busqueda.trim());
-      if (filtroUbicacion !== "todas") params.set("ubicacion", filtroUbicacion);
-      if (filtroTipo !== "todos") params.set("tipo", filtroTipo);
-      if (filtroPrecio !== "todos") params.set("precio", filtroPrecio);
-      if (filtroTamano !== "todos") params.set("area", filtroTamano);
-      if (orden !== "recientes") params.set("orden", orden);
+        if (busqueda.trim()) params.set("q", busqueda.trim());
+        if (filtroUbicacion !== "todas") params.set("ubicacion", filtroUbicacion);
+        if (filtroTipo !== "todos") params.set("tipo", filtroTipo);
+        if (filtroPrecio !== "todos") params.set("precio", filtroPrecio);
+        if (filtroTamano !== "todos") params.set("area", filtroTamano);
+        if (orden !== "recientes") params.set("orden", orden);
 
-      const response = await fetch(
-        `${API_URL}/api/terrenos/search?${params.toString()}`
-      );
+        const response = await fetch(
+          `${API_URL}/api/terrenos/search?${params.toString()}`
+        );
 
-      const data = await response.json();
+        const data = await response.json();
 
-      setTerrenos(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Error al cargar terrenos:", error);
-      setTerrenos([]);
-    } finally {
-      setCargando(false);
-    }
-  };
+        setTerrenos(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Error al cargar terrenos:", error);
+        setTerrenos([]);
+      } finally {
+        setCargando(false);
+      }
+    };
 
-  fetchTerrenos();
-}, [
-  busqueda,
-  filtroUbicacion,
-  filtroTipo,
-  filtroPrecio,
-  filtroTamano,
-  orden,
-]);
+    fetchTerrenos();
+  }, [
+    busqueda,
+    filtroUbicacion,
+    filtroTipo,
+    filtroPrecio,
+    filtroTamano,
+    orden,
+  ]);
 
   useEffect(() => {
     const q = searchParams.get("search") || searchParams.get("q") || "";
@@ -121,7 +120,6 @@ export default function TerrenosPage() {
 
   useEffect(() => {
     const params = new URLSearchParams();
-    
 
     if (busqueda.trim()) params.set("search", busqueda.trim());
     if (filtroUbicacion !== "todas") params.set("ubicacion", filtroUbicacion);
@@ -131,7 +129,9 @@ export default function TerrenosPage() {
     if (orden !== "recientes") params.set("orden", orden);
 
     const query = params.toString();
-    router.replace(query ? `/terrenos?${query}` : "/terrenos", { scroll: false });
+    router.replace(query ? `/terrenos?${query}` : "/terrenos", {
+      scroll: false,
+    });
   }, [
     busqueda,
     filtroUbicacion,
@@ -160,8 +160,8 @@ export default function TerrenosPage() {
 
   const terrenosFiltrados = useMemo(() => {
     let resultado = terrenos.filter(
-    (t) => t.estado?.toLowerCase() === "aprobado"
-  );
+      (t) => t.estado?.toLowerCase() === "aprobado"
+    );
 
     if (busqueda.trim()) {
       const texto = normalizeText(busqueda);
@@ -186,7 +186,6 @@ export default function TerrenosPage() {
         );
       });
     }
-
 
     if (filtroUbicacion !== "todas") {
       const ubicacionFiltro = normalizeText(filtroUbicacion);
@@ -290,20 +289,6 @@ export default function TerrenosPage() {
     filtroPrecio !== "todos" ||
     filtroTamano !== "todos" ||
     orden !== "recientes";
-
-  const getImagenTerreno = (img?: string | null) => {
-    if (!img || !img.trim()) return "/images/terreno-placeholder.png";
-
-    if (img.startsWith("http://") || img.startsWith("https://")) {
-      return img;
-    }
-
-    if (img.startsWith("/")) {
-      return `${API_URL}${img}`;
-    }
-
-    return `${API_URL}/${img}`;
-  };
 
   const Filtros = () => (
     <>
@@ -513,7 +498,9 @@ export default function TerrenosPage() {
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
             {terrenosFiltrados.map((terreno, index) => {
-              const imagen = getImagenTerreno(terreno.imagen_principal);
+              const imagen =
+                getImageUrl(terreno.imagen_principal) ||
+                "/images/terreno-placeholder.png";
 
               const ubicacionVisible =
                 [terreno.municipio, terreno.estado_region]

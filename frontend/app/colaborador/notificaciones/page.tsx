@@ -5,6 +5,8 @@ import { Bell, CheckCheck, Search, MessageCircle, UserRound } from "lucide-react
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
 interface Notificacion {
   id: number;
   tipo: string;
@@ -41,7 +43,7 @@ export default function ColaboradorNotificacionesPage() {
       setCargando(true);
 
       const response = await fetch(
-        "http://localhost:5000/api/notificaciones/mis-notificaciones",
+        `${API_URL}/api/notificaciones/mis-notificaciones`,
         {
           credentials: "include",
         }
@@ -72,7 +74,7 @@ export default function ColaboradorNotificacionesPage() {
   const marcarComoLeida = async (id: number) => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/notificaciones/${id}/leer`,
+        `${API_URL}/api/notificaciones/${id}/leer`,
         {
           method: "PATCH",
           credentials: "include",
@@ -101,7 +103,7 @@ export default function ColaboradorNotificacionesPage() {
       setProcesando(true);
 
       const response = await fetch(
-        "http://localhost:5000/api/notificaciones/leer-todas",
+        `${API_URL}/api/notificaciones/leer-todas`,
         {
           method: "PATCH",
           credentials: "include",

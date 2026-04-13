@@ -23,6 +23,7 @@ interface Lead {
   imagen_principal?: string;
   conversacion_id?: number;
 }
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 export default function ColaboradorLeadsPage() {
   const { user, loading } = useAuth();
@@ -43,20 +44,11 @@ export default function ColaboradorLeadsPage() {
     try {
       setCargando(true);
 
-      const response = await fetch("http://localhost:5000/api/leads/mis-leads", {
+      const response = await fetch(`${API_URL}/api/leads/mis-leads`, {
         credentials: "include",
       });
 
       const data = await response.json();
-      console.log(
-        "LEADS RESPONSE DETALLADO:",
-        data.map((lead: any) => ({
-            lead_id: lead.lead_id,
-            conversacion_id: lead.conversacion_id,
-            terreno_id: lead.terreno_id,
-            estado: lead.estado,
-        }))
-        );//-----------------------------------------------------------------------------
 
       if (!response.ok) {
         toast.error("No se pudieron cargar los leads.", {
@@ -121,7 +113,7 @@ export default function ColaboradorLeadsPage() {
   const getImageUrl = (img?: string) => {
     if (!img) return "/images/terreno-placeholder.jpg";
     if (img.startsWith("http")) return img;
-    return `http://localhost:5000${img}`;
+    return `${API_URL}${img}`;
   };
 
   return (

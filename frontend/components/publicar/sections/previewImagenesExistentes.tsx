@@ -1,5 +1,6 @@
 "use client";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 interface Props {
   imagenes: any[];
   imagenesEliminadas?: number[];
@@ -49,7 +50,7 @@ export default function PreviewImagenesExistentes({
             )}
 
             <img
-              src={`http://localhost:5000${imagen.url}`}
+              src={`${API_URL}${imagen.url}`}
               alt={`Imagen ${index + 1}`}
               className="h-36 w-full object-cover"
             />

@@ -8,7 +8,7 @@ const MapaComponent = dynamic(
   () => import("../../maps/mapaConfig"),
   { ssr: false }
 );
-
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 interface Props {
   formData: any;
   setFormData: any;
@@ -101,7 +101,7 @@ export default function UbicacionMapa({ formData, setFormData }: Props) {
         setErrorSepomex("");
 
         const response = await fetch(
-          `http://localhost:5000/api/sepomex/${codigoPostal}`,
+          `${API_URL}/api/sepomex/${codigoPostal}`,
           {
             method: "GET",
             credentials: "include"

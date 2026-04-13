@@ -43,14 +43,14 @@ export default function AdminSuscripcionesClient() {
   const [accionCargando, setAccionCargando] = useState<string | null>(null);
   const [openModal, setOpenModal] = useState(false);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
   const cargarSuscripciones = async () => {
     try {
       setCargando(true);
       setError("");
 
-      const res = await fetch(`${apiUrl}/api/suscripciones/admin/listado`, {
+      const res = await fetch(`${API_URL}/api/suscripciones/admin/listado`, {
         method: "GET",
         credentials: "include",
         headers: {
@@ -89,7 +89,7 @@ export default function AdminSuscripcionesClient() {
       setAccionCargando(loadingKey);
       setError("");
 
-      const res = await fetch(`${apiUrl}${endpoint}`, {
+      const res = await fetch(`${API_URL}${endpoint}`, {
         method: "POST",
         credentials: "include",
         headers: {

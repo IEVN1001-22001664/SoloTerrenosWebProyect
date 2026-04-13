@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { getSocket } from "@/src/lib/socket";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 interface Conversacion {
   conversacion_id: number;
   lead_id: number;
@@ -43,7 +44,6 @@ interface Mensaje {
   error?: boolean;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 
 export default function UsuarioMensajesPage() {

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { apiFetch } from "@/src/lib/api";
+import { apiFetch, getImageUrl } from "@/src/lib/api";
 import {
   Search,
   RefreshCw,
@@ -59,8 +59,6 @@ export default function ColaboradoresTable() {
   const [detalleOpen, setDetalleOpen] = useState(false);
   const [colaboradorSeleccionado, setColaboradorSeleccionado] =
     useState<Colaborador | null>(null);
-
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
   const fetchColaboradores = async () => {
     try {
@@ -416,9 +414,7 @@ export default function ColaboradoresTable() {
                         ? col.limite_terrenos_override
                         : col.plan_limite_terrenos;
 
-                    const fotoUrl = col.foto_perfil
-                      ? `${apiBase}${col.foto_perfil}`
-                      : null;
+                    const fotoUrl = getImageUrl(col.foto_perfil);
 
                     return (
                       <tr

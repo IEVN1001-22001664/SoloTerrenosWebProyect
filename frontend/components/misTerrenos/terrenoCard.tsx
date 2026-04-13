@@ -18,6 +18,7 @@ import {
 import EstadoTerrenoBadge from "./estadoTerrenoBadge";
 import ConfirmModal from "@/components/ui/confirmModal";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 interface Props {
   terreno: any;
   onEstadoChange: (id: number, nuevoEstado: string) => void;
@@ -40,7 +41,7 @@ export default function TerrenoCard({
   const { user } = useAuth();
 
   const imagen = terreno.imagen_principal
-    ? `http://localhost:5000${terreno.imagen_principal}`
+    ? `${API_URL}${terreno.imagen_principal}`
     : "https://via.placeholder.com/600x400?text=Sin+imagen";
 
   const estado = (terreno.estado || "").toLowerCase();
@@ -69,7 +70,7 @@ export default function TerrenoCard({
       setProcesando("pausar");
 
       const response = await fetch(
-        `http://localhost:5000/api/terrenos/${terreno.id}/pausar`,
+        `${API_URL}/api/terrenos/${terreno.id}/pausar`,
         {
           method: "PATCH",
           credentials: "include",
@@ -110,7 +111,7 @@ export default function TerrenoCard({
       setProcesando("reactivar");
 
       const response = await fetch(
-        `http://localhost:5000/api/terrenos/${terreno.id}/reactivar`,
+        `${API_URL}/api/terrenos/${terreno.id}/reactivar`,
         {
           method: "PATCH",
           credentials: "include",
@@ -151,7 +152,7 @@ export default function TerrenoCard({
       setProcesando("eliminar");
 
       const response = await fetch(
-        `http://localhost:5000/api/terrenos/${terreno.id}`,
+        `${API_URL}/api/terrenos/${terreno.id}`,
         {
           method: "DELETE",
           credentials: "include",

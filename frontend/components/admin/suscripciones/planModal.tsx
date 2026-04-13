@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const API_URL = "http://localhost:5000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 export default function PlanModal({ open, onClose, onSuccess, plan }: any) {
   const [form, setForm] = useState<any>({});

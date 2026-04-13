@@ -21,7 +21,7 @@ export default function PlanesClient() {
   const [error, setError] = useState("");
   const [planCargando, setPlanCargando] = useState<string | null>(null);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
   useEffect(() => {
     let activo = true;
@@ -31,7 +31,7 @@ export default function PlanesClient() {
         setCargando(true);
         setError("");
 
-        const res = await fetch(`${apiUrl}/api/suscripciones/planes`, {
+        const res = await fetch(`${API_URL}/api/suscripciones/planes`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -63,7 +63,7 @@ export default function PlanesClient() {
     return () => {
       activo = false;
     };
-  }, [apiUrl]);
+  }, [API_URL]);
 
   const formatearPrecio = (precio?: number | null) => {
     if (precio === null || precio === undefined) return "No disponible";
@@ -79,7 +79,7 @@ export default function PlanesClient() {
       setPlanCargando(planCodigo);
       setError("");
 
-      const res = await fetch(`${apiUrl}/api/stripe/create-checkout-session`, {
+      const res = await fetch(`${API_URL}/api/stripe/create-checkout-session`, {
         method: "POST",
         credentials: "include",
         headers: {

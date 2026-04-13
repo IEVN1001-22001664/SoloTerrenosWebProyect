@@ -24,7 +24,7 @@ export default function ExitoClient({ sessionId }: ExitoClientProps) {
   const [suscripcion, setSuscripcion] = useState<Suscripcion | null>(null);
   const [error, setError] = useState<string>("");
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
   useEffect(() => {
     let activo = true;
@@ -34,7 +34,7 @@ export default function ExitoClient({ sessionId }: ExitoClientProps) {
         setCargando(true);
         setError("");
 
-        const res = await fetch(`${apiUrl}/api/suscripciones/me`, {
+        const res = await fetch(`${API_URL}/api/suscripciones/me`, {
           method: "GET",
           credentials: "include",
           headers: {
@@ -72,7 +72,7 @@ export default function ExitoClient({ sessionId }: ExitoClientProps) {
       activo = false;
       clearInterval(intervalo);
     };
-  }, [apiUrl]);
+  }, [API_URL]);
 
   const estadoNormalizado = useMemo(() => {
     return suscripcion?.estado?.toLowerCase() || "";

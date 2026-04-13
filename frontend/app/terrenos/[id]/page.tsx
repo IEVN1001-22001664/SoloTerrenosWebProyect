@@ -21,6 +21,7 @@ import {
   MoveRight,
 } from "lucide-react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 interface Terreno {
   id: number;
   titulo: string;
@@ -58,7 +59,6 @@ interface TerrenoImagen {
   id: number;
   url: string;
 }
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 async function getTerreno(id: string): Promise<Terreno | null> {
   try {

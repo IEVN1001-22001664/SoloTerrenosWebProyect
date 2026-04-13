@@ -9,7 +9,7 @@ const MapViewer = dynamic(
   () => import("@/components/maps/MapViewer"),
   { ssr: false }
 );
-
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 interface Props {
   formData: any;
 }
@@ -38,7 +38,7 @@ export default function Confirmacion({ formData }: Props) {
       /* CREAR TERRENO               */
       /* --------------------------- */
       const response = await fetch(
-        "http://localhost:5000/api/terrenos",
+        `${API_URL}/api/terrenos`,
         {
           method: "POST",
           credentials: "include",
@@ -97,7 +97,7 @@ export default function Confirmacion({ formData }: Props) {
         });
 
         const responseImagenes = await fetch(
-          `http://localhost:5000/api/terrenos/${terrenoId}/imagenes`,
+          `${API_URL}/api/terrenos/${terrenoId}/imagenes`,
           {
             method: "POST",
             credentials: "include",
@@ -123,7 +123,7 @@ export default function Confirmacion({ formData }: Props) {
         });
 
         const responseDocumentos = await fetch(
-          `http://localhost:5000/api/terrenos/${terrenoId}/documentos`,
+          `${API_URL}/api/terrenos/${terrenoId}/documentos`,
           {
             method: "POST",
             credentials: "include",
@@ -151,7 +151,6 @@ export default function Confirmacion({ formData }: Props) {
     }
   };
 
-  console.log("POLIGONO EN CONFIRMACION:", formData.poligono);
   return (
     <div className="flex flex-col gap-8">
       {/* TITULO */}

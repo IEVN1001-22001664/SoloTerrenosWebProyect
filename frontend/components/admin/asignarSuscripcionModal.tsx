@@ -42,7 +42,7 @@ export default function AsignarSuscripcionModal({
   const [cargandoDatos, setCargandoDatos] = useState(false);
   const [error, setError] = useState("");
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
   useEffect(() => {
     if (!open) return;
@@ -53,14 +53,14 @@ export default function AsignarSuscripcionModal({
         setError("");
 
         const [usersRes, planesRes] = await Promise.all([
-          fetch(`${apiUrl}/api/admin/users`, {
+          fetch(`${API_URL}/api/admin/users`, {
             method: "GET",
             credentials: "include",
             headers: {
               "Content-Type": "application/json",
             },
           }),
-          fetch(`${apiUrl}/api/suscripciones/planes`, {
+          fetch(`${API_URL}/api/suscripciones/planes`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
@@ -90,7 +90,7 @@ export default function AsignarSuscripcionModal({
     };
 
     cargarDatos();
-  }, [open, apiUrl]);
+  }, [open, API_URL]);
 
   const limpiarFormulario = () => {
     setUsuarioId("");
@@ -152,7 +152,7 @@ export default function AsignarSuscripcionModal({
         usar_como_trial: usarComoTrial,
       };
 
-      const res = await fetch(`${apiUrl}/api/suscripciones/admin/asignar`, {
+      const res = await fetch(`${API_URL}/api/suscripciones/admin/asignar`, {
         method: "POST",
         credentials: "include",
         headers: {
