@@ -58,10 +58,11 @@ interface TerrenoImagen {
   id: number;
   url: string;
 }
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 async function getTerreno(id: string): Promise<Terreno | null> {
   try {
-    const res = await fetch(`http://localhost:5000/api/terrenos/id/${id}`, {
+    const res = await fetch(`${API_URL}/api/terrenos/id/${id}`, {
       cache: "no-store",
     });
 
@@ -76,7 +77,7 @@ async function getTerreno(id: string): Promise<Terreno | null> {
 
 async function getTerrenoImagenes(id: string): Promise<TerrenoImagen[]> {
   try {
-    const res = await fetch(`http://localhost:5000/api/terrenos/${id}/imagenes`, {
+    const res = await fetch(`${API_URL}/api/terrenos/${id}/imagenes`, {
       cache: "no-store",
     });
 
@@ -93,7 +94,7 @@ async function getTerrenoImagenes(id: string): Promise<TerrenoImagen[]> {
 function getImageUrl(url?: string) {
   if (!url) return "/images/terreno-placeholder.jpg";
   if (url.startsWith("http")) return url;
-  return `http://localhost:5000${url}`;
+  return `${API_URL}${url}`;
 }
 
 function money(value?: number | string) {
