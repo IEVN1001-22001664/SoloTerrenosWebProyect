@@ -459,6 +459,62 @@ const uploadProfilePhoto = async (req, res) => {
   }
 };
 
+// =============================
+// Refrescar sesión (nuevo JWT)
+// =============================
+const refreshSession = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const result = await pool.query(
+      "SELECT id, email, rol, nombre, apellido, foto_perfil FROM usuarios WHERE id = $1",
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    const user = result.rows[0];
+
+    const token = jwt.sign(
+      {
+        id: user.id,
+        rol: user.rol,
+        email: user.email,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "7d",
+      }
+    );
+
+    const isProduction = process.env.NODE_ENV === "production";
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.json({
+      message: "Sesión actualizada correctamente",
+      user: {
+        id: user.id,
+        email: user.email,
+        rol: user.rol,
+        nombre: user.nombre,
+        apellido: user.apellido,
+        foto_perfil: user.foto_perfil,
+      },
+    });
+  } catch (error) {
+    console.error("Error refrescando sesión:", error);
+    return res.status(500).json({ error: "Error refrescando sesión" });
+  }
+};
 module.exports = {
   login,
   logout,
@@ -468,4 +524,5 @@ module.exports = {
   updateProfile,
   changePassword,
   uploadProfilePhoto,
+  refreshSession
 };

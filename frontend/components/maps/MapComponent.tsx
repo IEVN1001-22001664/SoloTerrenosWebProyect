@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useEffect, useRef, useState } from "react";
 import {
   MapContainer,
@@ -9,14 +11,18 @@ import {
 } from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
 import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import "leaflet-draw/dist/leaflet.draw.css";
 
 function ResizeMap() {
   const map = useMap();
 
   useEffect(() => {
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       map.invalidateSize();
     }, 200);
+
+    return () => clearTimeout(timer);
   }, [map]);
 
   return null;
@@ -47,9 +53,7 @@ function getPerimeter(coords: number[][]) {
     const [lat1, lng1] = coords[i];
     const [lat2, lng2] = coords[(i + 1) % coords.length];
 
-    const distance = L.latLng(lat1, lng1).distanceTo(
-      L.latLng(lat2, lng2)
-    );
+    const distance = L.latLng(lat1, lng1).distanceTo(L.latLng(lat2, lng2));
 
     perimeter += distance;
   }
@@ -152,17 +156,11 @@ function DrawControl({
   const map = useMap();
   const featureGroupRef = useRef<L.FeatureGroup | null>(null);
 
-  /* ===================================== */
-  /* EXTRAER Y CALCULAR DATOS DEL POLÍGONO */
-  /* ===================================== */
   const procesarPoligono = (layer: any) => {
-    if (!(layer instanceof L.Polygon)) return;
+    if (!(layer instanceof L.Polygon)) return null;
 
     const rawLatLngs = layer.getLatLngs() as any[];
-
-    const firstLevel = Array.isArray(rawLatLngs[0])
-      ? rawLatLngs[0]
-      : rawLatLngs;
+    const firstLevel = Array.isArray(rawLatLngs[0]) ? rawLatLngs[0] : rawLatLngs;
 
     const latlngs = firstLevel.map((latlng: any) => [
       latlng.lat,
@@ -186,24 +184,17 @@ function DrawControl({
     return latlngs;
   };
 
-  /* ===================================== */
-  /* CARGAR POLÍGONO INICIAL EN EL GRUPO   */
-  /* ===================================== */
   useEffect(() => {
     if (!featureGroupRef.current) return;
 
     const featureGroup = featureGroupRef.current;
-
     featureGroup.clearLayers();
 
     if (initialPolygon && initialPolygon.length > 0) {
-      const polygonLayer = L.polygon(
-        initialPolygon as L.LatLngExpression[],
-        {
-          color: "#06489a",
-          weight: 3,
-        }
-      );
+      const polygonLayer = L.polygon(initialPolygon as L.LatLngExpression[], {
+        color: "#06489a",
+        weight: 3,
+      });
 
       featureGroup.addLayer(polygonLayer);
       setCoordinates(initialPolygon);
@@ -217,9 +208,6 @@ function DrawControl({
     }
   }, [initialPolygon, map, setCoordinates]);
 
-  /* ===================================== */
-  /* CREAR POLÍGONO                        */
-  /* ===================================== */
   const onCreated = (e: any) => {
     const featureGroup = featureGroupRef.current;
 
@@ -235,24 +223,17 @@ function DrawControl({
       map.fitBounds(bounds, {
         padding: [40, 40],
         animate: true,
-        duration: 5.2,
-        easeLinearity: 0.25,
+        duration: 1.2,
       });
     }
   };
 
-  /* ===================================== */
-  /* EDITAR POLÍGONO                       */
-  /* ===================================== */
   const onEdited = (e: any) => {
     e.layers.eachLayer((layer: any) => {
       procesarPoligono(layer);
     });
   };
 
-  /* ===================================== */
-  /* ELIMINAR POLÍGONO                     */
-  /* ===================================== */
   const onDeleted = () => {
     setCoordinates(null);
     onPolygonChange(null);
@@ -303,23 +284,28 @@ export default function MapComponent({
 
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
   const mapboxUrl = `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`;
+
+  useEffect(() => {
+    setCoordinates(initialPolygon || null);
+  }, [initialPolygon]);
+
   const hasPolygon = Boolean(initialPolygon && initialPolygon.length > 0);
 
   return (
-    <div className="w-full h-full">
+    <div className="h-full w-full">
       <MapContainer
         center={centerCoordinates || [23.6345, -102.5528]}
         zoom={centerCoordinates ? 18 : 5}
         maxZoom={22}
-        className="w-full h-full rounded-lg z-0"
+        className="h-full w-full rounded-lg z-0"
       >
         <ResizeMap />
+
         <UpdateMapCenter
           centerCoordinates={centerCoordinates}
           hasPolygon={hasPolygon}
         />
 
-        {/* CAPA BASE DEL MAPA */}
         {tipoMapa === "esri" ? (
           <TileLayer
             attribution="© Mapbox"
@@ -336,10 +322,8 @@ export default function MapComponent({
           />
         )}
 
-        {/* SI EXISTE POLÍGONO GUARDADO, AJUSTAR MAPA A SUS LÍMITES */}
         {initialPolygon && <FitPolygonBounds polygon={initialPolygon} />}
 
-        {/* CAPA DE DIBUJO + POLÍGONO EDITABLE */}
         <DrawControl
           onPolygonChange={onPolygonChange}
           setCoordinates={setCoordinates}
@@ -347,12 +331,9 @@ export default function MapComponent({
         />
       </MapContainer>
 
-      {/* DEBUG / COORDENADAS CAPTURADAS */}
       {coordinates && (
         <div className="mt-4 rounded-xl bg-gray-100 p-4">
-          <h2 className="mb-2 font-semibold">
-            Coordenadas capturadas:
-          </h2>
+          <h2 className="mb-2 font-semibold">Coordenadas capturadas:</h2>
           <pre className="overflow-auto text-sm">
             {JSON.stringify(coordinates, null, 2)}
           </pre>

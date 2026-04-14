@@ -1,8 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Clock3, CreditCard, ShieldCheck, ArrowRight } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  CheckCircle2,
+  Clock3,
+  CreditCard,
+  ShieldCheck,
+  ArrowRight,
+} from "lucide-react";
 
 interface Suscripcion {
   id: number;
@@ -23,6 +29,9 @@ export default function ExitoClient({ sessionId }: ExitoClientProps) {
   const [cargando, setCargando] = useState(true);
   const [suscripcion, setSuscripcion] = useState<Suscripcion | null>(null);
   const [error, setError] = useState<string>("");
+  const [sesionRefrescada, setSesionRefrescada] = useState(false);
+
+  const refrescoEjecutadoRef = useRef(false);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -47,7 +56,9 @@ export default function ExitoClient({ sessionId }: ExitoClientProps) {
         if (!activo) return;
 
         if (!res.ok) {
-          setError(data?.message || "No fue posible validar tu suscripción todavía.");
+          setError(
+            data?.message || "No fue posible validar tu suscripción todavía."
+          );
           setSuscripcion(null);
           return;
         }
@@ -78,7 +89,42 @@ export default function ExitoClient({ sessionId }: ExitoClientProps) {
     return suscripcion?.estado?.toLowerCase() || "";
   }, [suscripcion]);
 
-  const activada = estadoNormalizado === "activa" || estadoNormalizado === "trialing";
+  const activada =
+    estadoNormalizado === "activa" || estadoNormalizado === "trialing";
+
+  useEffect(() => {
+    if (!activada) return;
+    if (refrescoEjecutadoRef.current) return;
+
+    const refrescarSesion = async () => {
+      try {
+        refrescoEjecutadoRef.current = true;
+
+        const res = await fetch(`${API_URL}/api/auth/refresh`, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          console.error(
+            "No se pudo refrescar la sesión:",
+            data?.message || res.status
+          );
+          return;
+        }
+
+        setSesionRefrescada(true);
+      } catch (error) {
+        console.error("Error refrescando sesión:", error);
+      }
+    };
+
+    refrescarSesion();
+  }, [activada, API_URL]);
 
   const fechaFinFormateada = useMemo(() => {
     if (!suscripcion?.fecha_fin) return "Sin fecha disponible";
@@ -103,8 +149,9 @@ export default function ExitoClient({ sessionId }: ExitoClientProps) {
           </h1>
 
           <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-[#5f684f] md:text-base">
-            Tu operación en Stripe fue completada. Ahora estamos validando tu suscripción dentro
-            de SoloTerrenos para habilitar tus permisos de publicación.
+            Tu operación en Stripe fue completada. Ahora estamos validando tu
+            suscripción dentro de SoloTerrenos para habilitar tus permisos de
+            publicación.
           </p>
         </div>
 
@@ -122,7 +169,8 @@ export default function ExitoClient({ sessionId }: ExitoClientProps) {
                 <div className="flex items-center gap-3 text-[#5f684f]">
                   <Clock3 className="h-5 w-5 animate-pulse" />
                   <p className="text-sm md:text-base">
-                    Validando tu suscripción con el sistema. Esto puede tardar unos segundos.
+                    Validando tu suscripción con el sistema. Esto puede tardar
+                    unos segundos.
                   </p>
                 </div>
               </div>
@@ -191,6 +239,12 @@ export default function ExitoClient({ sessionId }: ExitoClientProps) {
                       ? "Tu suscripción ya está activa y tu cuenta puede operar como colaborador según la configuración aplicada."
                       : "Tu pago ya fue recibido, pero la activación todavía no aparece como finalizada. Mantén esta página abierta unos segundos o recárgala."}
                   </p>
+
+                  {activada && sesionRefrescada && (
+                    <p className="mt-3 text-sm font-medium text-[#22341c]">
+                      Tu sesión fue actualizada correctamente con los nuevos permisos.
+                    </p>
+                  )}
                 </div>
               </div>
             )}
