@@ -1,9 +1,7 @@
 "use client";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -17,7 +15,7 @@ import type { Marker as LeafletMarker, LatLngExpression } from "leaflet";
 import L, { DivIcon } from "leaflet";
 import { Map as MapIcon } from "lucide-react";
 import "leaflet/dist/leaflet.css";
-import { MapBounds, PolygonPoint, TerrenoMapa } from "./types";
+import { MapBounds, TerrenoMapa } from "./types";
 
 type FocusRequest = {
   id: number;
@@ -83,6 +81,7 @@ function createPriceIcon(
       : "#22341c";
 
   const scale = state === "selected" ? 1.08 : state === "hovered" ? 1.04 : 1;
+  
 
   return L.divIcon({
     className: "",
@@ -124,51 +123,60 @@ function normalizePolygonPositions(
   poligono: TerrenoMapa["poligono"]
 ): LatLngExpression[] {
   if (!poligono) return [];
-  if (!Array.isArray(poligono)) return [];
 
-  // [[lat, lng], ...] o [[lng, lat], ...]
-  if (
-    poligono.length > 0 &&
-    Array.isArray(poligono[0]) &&
-    (poligono[0] as any[]).length >= 2 &&
-    typeof (poligono[0] as any[])[0] === "number"
-  ) {
-    const firstPoint = poligono[0] as number[];
-    const looksLikeGeoJson =
-      Math.abs(firstPoint[0]) > 90 || Math.abs(firstPoint[1]) <= 90;
+  let value: unknown = poligono;
 
-    return (poligono as number[][]).map((point) => {
-      if (looksLikeGeoJson) {
-        return [point[1], point[0]] as LatLngExpression;
-      }
-      return [point[0], point[1]] as LatLngExpression;
-    });
+  // Si viene serializado como string JSON
+  if (typeof value === "string") {
+    try {
+      value = JSON.parse(value);
+    } catch {
+      return [];
+    }
   }
 
-  // [{lat, lng}, ...]
+  if (!Array.isArray(value) || value.length === 0) return [];
+
+  // Caso 1: [[lat, lng], ...] o [[lng, lat], ...]
   if (
-    poligono.length > 0 &&
-    typeof poligono[0] === "object" &&
-    poligono[0] !== null &&
-    "lat" in (poligono[0] as Record<string, unknown>) &&
-    "lng" in (poligono[0] as Record<string, unknown>)
+    Array.isArray(value[0]) &&
+    (value[0] as unknown[]).length >= 2 &&
+    typeof (value[0] as unknown[])[0] === "number" &&
+    typeof (value[0] as unknown[])[1] === "number"
   ) {
-    return (poligono as PolygonPoint[]).map((point) => {
-      if (Array.isArray(point)) {
-        return [point[0], point[1]] as LatLngExpression;
-      }
-      return [point.lat, point.lng] as LatLngExpression;
-    });
+    const points = value as number[][];
+    const [a, b] = points[0];
+
+    // Si el primer número parece longitud, asumimos [lng, lat]
+    const looksLikeLngLat = Math.abs(a) > 90 && Math.abs(b) <= 90;
+
+    return points.map(([x, y]) =>
+      looksLikeLngLat
+        ? ([y, x] as LatLngExpression)
+        : ([x, y] as LatLngExpression)
+    );
   }
 
-  // GeoJSON Polygon [[[lng, lat], ...]]
+  // Caso 2: [{ lat, lng }, ...]
   if (
-    poligono.length > 0 &&
-    Array.isArray(poligono[0]) &&
-    Array.isArray((poligono[0] as any[])[0])
+    typeof value[0] === "object" &&
+    value[0] !== null &&
+    "lat" in (value[0] as Record<string, unknown>) &&
+    "lng" in (value[0] as Record<string, unknown>)
   ) {
-    const ring = (poligono[0] as number[][]) || [];
-    return ring.map((point) => [point[1], point[0]] as LatLngExpression);
+    return (value as { lat: number; lng: number }[]).map((point) => [
+      point.lat,
+      point.lng,
+    ]);
+  }
+
+  // Caso 3: GeoJSON Polygon [[[lng, lat], ...]]
+  if (
+    Array.isArray(value[0]) &&
+    Array.isArray((value[0] as unknown[])[0])
+  ) {
+    const ring = value[0] as number[][];
+    return ring.map(([lng, lat]) => [lat, lng] as LatLngExpression);
   }
 
   return [];
@@ -295,6 +303,10 @@ function ActivePolygonOverlay({
   const activeTerreno = terrenos.find((t) => t.id === activePolygonId) || null;
   const positions = normalizePolygonPositions(activeTerreno?.poligono);
 
+  console.log("activePolygonId:", activePolygonId);
+  console.log("activeTerreno:", activeTerreno);
+  console.log("positions:", positions);
+
   useEffect(() => {
     if (!activePolygonId || !positions.length) return;
     if (lastFitIdRef.current === activePolygonId) return;
@@ -355,7 +367,6 @@ function InitialRegionFit({
   return null;
 }
 
-
 export default function ZonasMap({
   terrenos,
   selectedId,
@@ -374,15 +385,13 @@ export default function ZonasMap({
   const markerRefs = useRef<Record<number, LeafletMarker | null>>({});
   const [currentZoom, setCurrentZoom] = useState<number>(MEXICO_ZOOM);
   const [activePolygonId, setActivePolygonId] = useState<number | null>(null);
-  const visiblePolygonId = useMemo(() => {
-  if (focusRequest) return null;
-  if (openPopupId !== null) return null;
-  return activePolygonId;
-}, [activePolygonId, focusRequest, openPopupId]);
+
+  const visiblePolygonId = focusRequest ? null : activePolygonId;
 
   const isSatellite = Boolean(MAPBOX_TOKEN) && currentZoom >= 18;
   const effectiveInitialCenter = initialCenter ?? MEXICO_CENTER;
   const effectiveInitialZoom = initialZoom ?? MEXICO_ZOOM;
+  const ignoreNextMapClickRef = useRef(false);
 
   useEffect(() => {
     Object.entries(markerRefs.current).forEach(([id, marker]) => {
@@ -423,6 +432,7 @@ export default function ZonasMap({
           onBoundsChange={onBoundsChange}
           onClosePopup={onClosePopup}
           onDismissPolygon={() => setActivePolygonId(null)}
+          ignoreNextMapClickRef={ignoreNextMapClickRef}
         />
         <FocusSelectedTerreno terrenos={terrenos} focusRequest={focusRequest} />
         <ActivePolygonOverlay
@@ -477,7 +487,6 @@ export default function ZonasMap({
               icon={createPriceIcon(t.precio, state)}
               eventHandlers={{
                 click: () => {
-                  setActivePolygonId(null);
                   onSelectTerreno(t.id);
                 },
               }}
@@ -494,8 +503,16 @@ export default function ZonasMap({
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
+
+                          const nativeEvent = e.nativeEvent as MouseEvent;
+                          L.DomEvent.stopPropagation(nativeEvent);
+                          L.DomEvent.preventDefault(nativeEvent);
+
                           setActivePolygonId(t.id);
-                          onClosePopup();
+
+                          requestAnimationFrame(() => {
+                            onClosePopup();
+                          });
                         }}
                         className="absolute right-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#22341c] shadow-md transition hover:bg-white"
                         title="Ver polígono del terreno"
