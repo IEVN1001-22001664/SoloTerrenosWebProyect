@@ -279,7 +279,13 @@ exports.cambiarEstadoPublicacion = async (req, res) => {
     const { estado, mensaje } = req.body;
     const admin_id = req.user.id;
 
-    const estadosPermitidos = ["pendiente", "aprobado", "rechazado", "pausado", "eliminado"];
+    const estadosPermitidos = [
+      "pendiente",
+      "aprobado",
+      "rechazado",
+      "pausado",
+      "eliminado",
+    ];
 
     if (!estado || !estadosPermitidos.includes(estado)) {
       return res.status(400).json({
@@ -298,12 +304,6 @@ exports.cambiarEstadoPublicacion = async (req, res) => {
             ? "Debes proporcionar un mensaje de observación al rechazar una publicación"
             : "Debes proporcionar un mensaje de observación al pausar una publicación",
       });
-    }
-    if (estado === "pausado") {
-      tituloNotificacion = "Publicación pausada";
-      mensajeNotificacion =
-        mensaje?.trim() ||
-        `Tu terreno "${terreno.titulo}" fue pausado temporalmente. Revisa la observación del administrador.`;
     }
 
     await client.query("BEGIN");
@@ -352,12 +352,7 @@ exports.cambiarEstadoPublicacion = async (req, res) => {
       )
       VALUES ($1, $2, $3, $4)
       `,
-      [
-        id,
-        admin_id,
-        estado,
-        mensaje?.trim() || null,
-      ]
+      [id, admin_id, estado, mensaje?.trim() || null]
     );
 
     // 4. Crear notificación al colaborador
@@ -376,6 +371,13 @@ exports.cambiarEstadoPublicacion = async (req, res) => {
       mensajeNotificacion =
         mensaje?.trim() ||
         `Tu terreno "${terreno.titulo}" fue rechazado. Revisa la observación del administrador y vuelve a postularlo.`;
+    }
+
+    if (estado === "pausado") {
+      tituloNotificacion = "Publicación pausada";
+      mensajeNotificacion =
+        mensaje?.trim() ||
+        `Tu terreno "${terreno.titulo}" fue pausado temporalmente. Revisa la observación del administrador.`;
     }
 
     await client.query(

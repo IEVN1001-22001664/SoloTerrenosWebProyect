@@ -527,7 +527,7 @@ export default function TerrenosPage() {
                       alt={terreno.titulo}
                       loading="lazy"
                       onError={(e) => {
-                        e.currentTarget.src = "/images/terreno-placeholder.jpg";
+                        e.currentTarget.src = "/images/terreno-placeholder.png";
                       }}
                       className="h-56 w-full object-cover transition duration-700 ease-out group-hover:scale-[1.04]"
                     />
