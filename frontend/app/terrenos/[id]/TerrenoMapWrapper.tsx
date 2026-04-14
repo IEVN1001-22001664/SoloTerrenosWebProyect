@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { LatLngTuple } from 'leaflet';
+import type { LatLngTuple } from "leaflet";
 
 // Cargamos el componente del mapa de forma dinámica
 const TerrenoMap = dynamic(() => import("./TerrenoMap"), {

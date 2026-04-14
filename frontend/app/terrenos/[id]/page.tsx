@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { LatLngTuple } from "leaflet";
+import type { LatLngTuple } from "leaflet";
 import Link from "next/link";
 import TerrenoMapWrapper from "./TerrenoMapWrapper";
 import TerrenoContactoActions from "./terrenoContactoActions";
