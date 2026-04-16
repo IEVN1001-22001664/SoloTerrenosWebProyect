@@ -120,7 +120,7 @@ export default function ZonasFiltersBar({
   };
 
   return (
-    <div className="sticky top-[64px] z-[1200] border-b border-[#d9d4c7] bg-white/95 backdrop-blur">
+    <div className="sticky top-0 z-[1200] border-b border-[#d9d4c7] bg-white/95 backdrop-blur">
       <div className="flex flex-col gap-4 px-4 py-4 lg:px-6">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">

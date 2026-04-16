@@ -303,10 +303,6 @@ function ActivePolygonOverlay({
   const activeTerreno = terrenos.find((t) => t.id === activePolygonId) || null;
   const positions = normalizePolygonPositions(activeTerreno?.poligono);
 
-  console.log("overlay activePolygonId:", activePolygonId);
-  console.log("overlay activeTerreno:", activeTerreno);
-  console.log("overlay positions:", positions);
-
   useEffect(() => {
     if (!activePolygonId || !positions.length) return;
     if (lastFitIdRef.current === activePolygonId) return;
@@ -387,10 +383,6 @@ export default function ZonasMap({
   const isSatellite = Boolean(MAPBOX_TOKEN) && currentZoom >= 18;
   const effectiveInitialCenter = initialCenter ?? MEXICO_CENTER;
   const effectiveInitialZoom = initialZoom ?? MEXICO_ZOOM;
-
-  console.log("STATE activePolygonId real:", activePolygonId);
-  console.log("STATE focusRequest real:", focusRequest);
-  console.log("STATE openPopupId real:", openPopupId);
 
   useEffect(() => {
     Object.entries(markerRefs.current).forEach(([id, marker]) => {

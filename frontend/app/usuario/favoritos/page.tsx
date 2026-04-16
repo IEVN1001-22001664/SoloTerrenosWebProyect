@@ -67,10 +67,10 @@ export default function UsuarioFavoritosPage() {
 
   useEffect(() => {
     if (loading) return;
-    if (!user) return;
+    if (!user?.id) return;
 
     fetchFavoritos();
-  }, [loading, user]);
+  }, [loading, user?.id]);
 
   const fetchFavoritos = async () => {
     try {

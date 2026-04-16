@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { LatLngTuple } from "leaflet";
 
 const TerrenoMap = dynamic(() => import("./TerrenoMap"), {
   ssr: false,
@@ -11,7 +10,7 @@ const TerrenoMap = dynamic(() => import("./TerrenoMap"), {
 });
 
 interface Props {
-  coordinates: LatLngTuple[];
+  coordinates: [number, number][];
 }
 
 export default function TerrenoMapWrapper({ coordinates }: Props) {

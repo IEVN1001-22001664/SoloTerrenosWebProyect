@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
 
 interface User {
   id: number;
@@ -31,7 +38,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/auth/me`, {
         credentials: "include",
@@ -44,15 +51,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       const data = await res.json();
 
-      setUser((prev) => ({
-        ...data.user,
-        foto_cache_key: prev?.foto_cache_key || Date.now(),
-      }));
+      setUser((prev) => {
+        const incomingUser = data.user;
+
+        // conserva la cache key previa si ya existe
+        const fotoCacheKey =
+          prev?.foto_cache_key ??
+          (incomingUser?.foto_perfil ? Date.now() : undefined);
+
+        return {
+          ...incomingUser,
+          foto_cache_key: fotoCacheKey,
+        };
+      });
     } catch (error) {
       console.error("Error refrescando usuario:", error);
       setUser(null);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -64,46 +80,45 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     checkAuth();
-  }, []);
+  }, [refreshUser]);
 
-  const login = (userData: User) => {
+  const login = useCallback((userData: User) => {
     setUser({
       ...userData,
       foto_cache_key: Date.now(),
     });
-  };
+  }, []);
 
-  const updateUser = (data: Partial<User>) => {
+  const updateUser = useCallback((data: Partial<User>) => {
     setUser((prev) => {
       if (!prev) return prev;
       return { ...prev, ...data };
     });
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await fetch(`${API_URL}/api/auth/logout`, {
       method: "POST",
       credentials: "include",
     });
 
     setUser(null);
-  };
+  }, []);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        login,
-        logout,
-        setUser,
-        refreshUser,
-        updateUser,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({
+      user,
+      loading,
+      login,
+      logout,
+      setUser,
+      refreshUser,
+      updateUser,
+    }),
+    [user, loading, login, logout, refreshUser, updateUser]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {

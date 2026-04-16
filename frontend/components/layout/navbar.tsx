@@ -75,7 +75,7 @@ export default function Navbar() {
   const navLinksAdmin = [
     { label: "Comprar", href: "/terrenos" },
     { label: "Zonas", href: "/zonas" },
-    // { label: "Desarrollos", href: "/desarrollos" }, // pendiente cuando exista la página
+    // { label: "Desarrollos", href: "/desarrollos" },
   ];
 
   const totalNoLeidas = useMemo(
@@ -127,13 +127,10 @@ export default function Navbar() {
   useEffect(() => {
     if (loading) return;
     if (!user?.id) return;
+    if (user.rol !== "usuario" && user.rol !== "colaborador") return;
+    if (user.foto_perfil) return;
 
-    if (
-      (user.rol === "usuario" || user.rol === "colaborador") &&
-      !user.foto_perfil
-    ) {
-      refreshUser();
-    }
+    refreshUser();
   }, [loading, user?.id, user?.rol, user?.foto_perfil, refreshUser]);
 
   useEffect(() => {
@@ -361,26 +358,8 @@ export default function Navbar() {
     );
   };
 
-  const DesktopNavLinks = () => (
-    <nav className="hidden items-center gap-2 lg:flex">
-      {navLinksDesktop.map((link) => (
-        <Link
-          key={link.label}
-          href={link.href}
-          className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-            isActive(link.href)
-              ? "bg-[#22341c] text-white shadow-sm"
-              : "text-[#4f4a3d] hover:bg-white/70 hover:text-[#22341c]"
-          }`}
-        >
-          {link.label}
-        </Link>
-      ))}
-    </nav>
-  );
-
   return (
-    <header className="fixed left-0 top-3 z-50 flex w-full justify-center px-3 md:px-4">
+    <header className="fixed left-0 top-5 z-50 flex w-full justify-center px-3 md:px-4">
       <motion.div
         initial={{ opacity: 0, y: -18 }}
         animate={{ opacity: 1, y: 0 }}
@@ -391,8 +370,8 @@ export default function Navbar() {
         <div
           className={`rounded-[2rem] border backdrop-blur-xl transition-all duration-300 ${
             scrolled
-              ? "border-[#817d58]/18 bg-white/90 px-4 py-3 shadow-[0_16px_40px_rgba(34,52,28,0.12)] md:px-5"
-              : "border-white/40 bg-white/72 px-4 py-4 shadow-[0_10px_30px_rgba(34,52,28,0.08)] md:px-6"
+              ? "border-white/20 bg-white/68 px-5 py-2 shadow-[0_12px_28px_rgba(34,52,28,0.08)] md:px-6"
+              : "border-[#817d58]/14 bg-white px-5 py-2.5 shadow-[0_14px_34px_rgba(34,52,28,0.10)] md:px-6"
           }`}
         >
           {/* MOBILE / TABLET */}
@@ -443,47 +422,78 @@ export default function Navbar() {
           </div>
 
           {/* DESKTOP */}
-          <div className="hidden items-center lg:grid lg:grid-cols-[1fr_auto_1fr] lg:gap-6">
-            <div className="flex min-w-0 items-center justify-start">
-              <DesktopNavLinks />
-            </div>
-
-            <div className="flex items-center justify-center">
-              <Link href="/" className="group flex items-center justify-center">
+          <div className="relative hidden lg:flex lg:items-center lg:justify-between">
+            {/* LOGO SUPERPUESTO */}
+            <div
+              className={`pointer-events-none absolute left-1/2 z-30 -translate-x-1/2 transition-all duration-300 ${
+                scrolled
+                  ? "top-1/2 -translate-y-1/2"
+                  : "top-1/2 -translate-y-[42%]"
+              }`}
+            >
+              <Link href="/" className="pointer-events-auto block">
                 <motion.div
-                  whileHover={{ scale: 1.04, rotate: -2 }}
+                  whileHover={{ scale: 1.04, y: -1 }}
                   transition={{ type: "spring", stiffness: 280, damping: 18 }}
-                  className={`relative rounded-full transition-all duration-300 ${
-                    scrolled ? "p-1" : "p-1.5"
-                  }`}
+                  className="flex items-center justify-center"
                 >
                   <Image
-                    src="/images/IconoST.png"
+                    src={scrolled ? "/images/IconoST.png" : "/images/IconoST.jpg.png"}
                     alt="Solo Terrenos"
-                    width={86}
-                    height={86}
+                    width={120}
+                    height={120}
                     priority
                     className={`w-auto object-contain transition-all duration-300 ${
-                      scrolled ? "h-[62px]" : "h-[72px]"
+                      scrolled ? "h-[58px]" : "h-[112px]"
                     }`}
                   />
                 </motion.div>
               </Link>
             </div>
 
-            <div className="flex items-center justify-end gap-2">
+            {/* IZQUIERDA */}
+            <div className="flex min-w-0 flex-1 items-center">
+              <nav className="flex items-center gap-[42px] xl:gap-[42px]">
+                {navLinksDesktop.map((link) => (
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    className={`rounded-full font-semibold transition-all duration-300 ${
+                      scrolled
+                        ? "px-4 py-1.5 text-[15px]"
+                        : "px-5 py-2 text-[16px]"
+                    } ${
+                      isActive(link.href)
+                        ? "bg-[#22341c] text-white shadow-sm"
+                        : scrolled
+                        ? "text-[#4a5240] hover:bg-white hover:text-[#22341c]"
+                        : "text-[#4a5240] hover:bg-[#22341c]/16 hover:text-[#22341c]"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+
+            {/* DERECHA */}
+            <div className="flex flex-1 items-center justify-end gap-6 xl:gap-12">
               {!user && (
                 <>
                   <Link
                     href="/login"
-                    className="rounded-full px-4 py-2 text-sm font-medium text-[#4f4a3d] transition hover:bg-white/70 hover:text-[#22341c]"
+                    className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-300 ${
+                      scrolled
+                        ? "text-[#4a5240] hover:bg-white hover:text-[#22341c]"
+                        : "text-[#4a5240] hover:bg-[#22341c]/16 hover:text-[#22341c]"
+                    }`}
                   >
                     Ingresar
                   </Link>
 
                   <Link
                     href="/register"
-                    className="rounded-full bg-[#22341c] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#828d4b]"
+                    className="rounded-full bg-[#22341c] px-5 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:scale-[1.03] hover:bg-[#828d4b]"
                   >
                     Registrarse
                   </Link>
@@ -495,9 +505,18 @@ export default function Navbar() {
                   <button
                     type="button"
                     onClick={() => setOpenNotifPanel((prev) => !prev)}
-                    className="relative flex h-11 w-11 items-center justify-center rounded-full border border-[#817d58]/15 bg-white/80 text-[#22341c] transition hover:bg-white"
+                    className={`group relative flex items-center justify-center rounded-full border border-[#817d58]/15 bg-white/80 text-[#22341c] transition-all duration-300 ${
+                      scrolled ? "h-10 w-10" : "h-12 w-12"
+                    } ${
+                      scrolled
+                        ? "hover:scale-105 hover:bg-white hover:text-[#22341c]"
+                        : "hover:scale-105 hover:bg-[#22341c]/16 hover:text-[#22341c]"
+                    }`}
                   >
-                    <Bell size={18} />
+                    <Bell
+                      className="transition-transform duration-300 group-hover:scale-110"
+                      size={scrolled ? 16 : 20}
+                    />
                     {totalNoLeidas > 0 && (
                       <span className="absolute -right-1 -top-1 min-w-[20px] rounded-full bg-[#828d4b] px-1.5 py-0.5 text-center text-[11px] font-bold text-white">
                         {totalNoLeidas > 9 ? "9+" : totalNoLeidas}
@@ -606,18 +625,36 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/usuario/favoritos"
-                    className="flex h-11 w-11 items-center justify-center rounded-full border border-[#817d58]/15 bg-white/80 text-[#22341c] transition hover:bg-white"
+                    className={`group relative flex items-center justify-center rounded-full border border-[#817d58]/15 bg-white/80 text-[#22341c] transition-all duration-300 ${
+                      scrolled ? "h-10 w-10" : "h-12 w-12"
+                    } ${
+                      scrolled
+                        ? "hover:scale-105 hover:bg-white hover:text-[#22341c]"
+                        : "hover:scale-105 hover:bg-[#22341c]/16 hover:text-[#22341c]"
+                    }`}
                     title="Favoritos"
                   >
-                    <Heart size={18} />
+                    <Heart
+                      size={scrolled ? 16 : 20}
+                      className="transition-transform duration-300 group-hover:scale-110"
+                    />
                   </Link>
 
                   <Link
                     href="/usuario/mensajes"
-                    className="relative flex h-11 w-11 items-center justify-center rounded-full border border-[#817d58]/15 bg-white/80 text-[#22341c] transition hover:bg-white"
+                    className={`group relative flex items-center justify-center rounded-full border border-[#817d58]/15 bg-white/80 text-[#22341c] transition-all duration-300 ${
+                      scrolled ? "h-10 w-10" : "h-12 w-12"
+                    } ${
+                      scrolled
+                        ? "hover:scale-105 hover:bg-white hover:text-[#22341c]"
+                        : "hover:scale-105 hover:bg-[#22341c]/16 hover:text-[#22341c]"
+                    }`}
                     title="Mensajes"
                   >
-                    <MessageCircle size={18} />
+                    <MessageCircle
+                      size={scrolled ? 16 : 20}
+                      className="transition-transform duration-300 group-hover:scale-110"
+                    />
                     {unreadMessagesCount > 0 && (
                       <span className="absolute -right-1 -top-1 min-w-[20px] rounded-full bg-[#828d4b] px-1.5 py-0.5 text-center text-[11px] font-bold text-white">
                         {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
@@ -629,10 +666,22 @@ export default function Navbar() {
                     <button
                       type="button"
                       onClick={() => setOpenProfileMenu((prev) => !prev)}
-                      className="flex items-center gap-2 rounded-full border border-[#817d58]/15 bg-white/80 px-2.5 py-2 text-[#22341c] transition hover:bg-white"
+                      className={`group flex items-center rounded-full border border-[#817d58]/15 bg-white/80 text-[#22341c] transition-all duration-300 ${
+                        scrolled ? "gap-1.5 px-2.5 py-1.5" : "gap-2 px-3 py-2"
+                      } ${
+                        scrolled
+                          ? "hover:scale-105 hover:bg-white"
+                          : "hover:scale-105 hover:bg-[#22341c]/16"
+                      }`}
                     >
-                      {renderAvatar()}
-                      <ChevronDown size={16} />
+                      {renderAvatar(
+                        scrolled ? "h-8 w-8" : "h-9 w-9",
+                        scrolled ? 15 : 16
+                      )}
+                      <ChevronDown
+                        size={scrolled ? 14 : 16}
+                        className="transition-transform duration-300 group-hover:scale-110"
+                      />
                     </button>
 
                     <AnimatePresence>
@@ -732,18 +781,27 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/publicar"
-                    className="inline-flex items-center gap-2 rounded-full bg-[#22341c] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#828d4b]"
+                    className="inline-flex items-center gap-2 rounded-full bg-[#22341c] px-4 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:scale-[1.03] hover:bg-[#828d4b]"
                   >
-                    <PlusCircle size={16} />
+                    <PlusCircle size={scrolled ? 15 : 17} />
                     Publicar
                   </Link>
 
                   <Link
                     href="/colaborador/mensajes"
-                    className="relative flex h-11 w-11 items-center justify-center rounded-full border border-[#817d58]/15 bg-white/80 text-[#22341c] transition hover:bg-white"
+                    className={`group relative flex items-center justify-center rounded-full border border-[#817d58]/15 bg-white/80 text-[#22341c] transition-all duration-300 ${
+                      scrolled ? "h-10 w-10" : "h-12 w-12"
+                    } ${
+                      scrolled
+                        ? "hover:scale-105 hover:bg-white hover:text-[#22341c]"
+                        : "hover:scale-105 hover:bg-[#22341c]/16 hover:text-[#22341c]"
+                    }`}
                     title="Mensajes"
                   >
-                    <MessageCircle size={18} />
+                    <MessageCircle
+                      size={scrolled ? 16 : 20}
+                      className="transition-transform duration-300 group-hover:scale-110"
+                    />
                     {unreadMessagesCount > 0 && (
                       <span className="absolute -right-1 -top-1 min-w-[20px] rounded-full bg-[#828d4b] px-1.5 py-0.5 text-center text-[11px] font-bold text-white">
                         {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
@@ -753,20 +811,41 @@ export default function Navbar() {
 
                   <Link
                     href="/colaborador"
-                    className="flex h-11 w-11 items-center justify-center rounded-full border border-[#817d58]/15 bg-white/80 text-[#22341c] transition hover:bg-white"
+                    className={`group relative flex items-center justify-center rounded-full border border-[#817d58]/15 bg-white/80 text-[#22341c] transition-all duration-300 ${
+                      scrolled ? "h-10 w-10" : "h-12 w-12"
+                    } ${
+                      scrolled
+                        ? "hover:scale-105 hover:bg-white hover:text-[#22341c]"
+                        : "hover:scale-105 hover:bg-[#22341c]/16 hover:text-[#22341c]"
+                    }`}
                     title="Panel"
                   >
-                    <LayoutGrid size={18} />
+                    <LayoutGrid
+                      size={scrolled ? 16 : 20}
+                      className="transition-transform duration-300 group-hover:scale-110"
+                    />
                   </Link>
 
                   <div className="relative" ref={profileRef}>
                     <button
                       type="button"
                       onClick={() => setOpenProfileMenu((prev) => !prev)}
-                      className="flex items-center gap-2 rounded-full border border-[#817d58]/15 bg-white/80 px-2.5 py-2 text-[#22341c] transition hover:bg-white"
+                      className={`group flex items-center rounded-full border border-[#817d58]/15 bg-white/80 text-[#22341c] transition-all duration-300 ${
+                        scrolled ? "gap-1.5 px-2.5 py-1.5" : "gap-2 px-3 py-2"
+                      } ${
+                        scrolled
+                          ? "hover:scale-105 hover:bg-white"
+                          : "hover:scale-105 hover:bg-[#22341c]/16"
+                      }`}
                     >
-                      {renderAvatar()}
-                      <ChevronDown size={16} />
+                      {renderAvatar(
+                        scrolled ? "h-8 w-8" : "h-9 w-9",
+                        scrolled ? 15 : 16
+                      )}
+                      <ChevronDown
+                        size={scrolled ? 14 : 16}
+                        className="transition-transform duration-300 group-hover:scale-110"
+                      />
                     </button>
 
                     <AnimatePresence>
@@ -839,9 +918,9 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/admin"
-                    className="inline-flex items-center gap-2 rounded-full bg-[#22341c] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#828d4b]"
+                    className="inline-flex items-center gap-2 rounded-full bg-[#22341c] px-4 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:scale-[1.03] hover:bg-[#828d4b]"
                   >
-                    <ShieldCheck size={16} />
+                    <ShieldCheck size={scrolled ? 15 : 17} />
                     CRM
                   </Link>
 
@@ -849,10 +928,22 @@ export default function Navbar() {
                     <button
                       type="button"
                       onClick={() => setOpenProfileMenu((prev) => !prev)}
-                      className="flex items-center gap-2 rounded-full border border-[#817d58]/15 bg-white/80 px-2.5 py-2 text-[#22341c] transition hover:bg-white"
+                      className={`group flex items-center rounded-full border border-[#817d58]/15 bg-white/80 text-[#22341c] transition-all duration-300 ${
+                        scrolled ? "gap-1.5 px-2.5 py-1.5" : "gap-2 px-3 py-2"
+                      } ${
+                        scrolled
+                          ? "hover:scale-105 hover:bg-white"
+                          : "hover:scale-105 hover:bg-[#22341c]/16"
+                      }`}
                     >
-                      {renderAvatar()}
-                      <ChevronDown size={16} />
+                      {renderAvatar(
+                        scrolled ? "h-8 w-8" : "h-9 w-9",
+                        scrolled ? 15 : 16
+                      )}
+                      <ChevronDown
+                        size={scrolled ? 14 : 16}
+                        className="transition-transform duration-300 group-hover:scale-110"
+                      />
                     </button>
 
                     <AnimatePresence>

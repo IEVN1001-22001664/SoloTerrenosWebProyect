@@ -14,21 +14,33 @@ export default function RootLayout({
   const pathname = usePathname();
 
   const isAdminRoute = pathname.startsWith("/admin");
-  const isLandingPage = pathname === "/";
+  const isAuthRoute = pathname === "/login" || pathname === "/register";
+  const usesHeroOverlay =
+    pathname === "/" || pathname === "/tipos";
+  const usesWhiteShell =
+    pathname.startsWith("/zonas");
+  const usesSlateShell =
+    pathname.startsWith("/publicar");
+
+  const mainClassName = isAdminRoute
+    ? "w-full min-h-screen"
+    : isAuthRoute
+    ? "w-full min-h-screen bg-transparent pt-0"
+    : usesHeroOverlay
+    ? "w-full min-h-screen bg-transparent pt-0"
+    : usesWhiteShell
+    ? "w-full min-h-screen bg-white pt-[var(--navbar-safe-offset)]"
+    : usesSlateShell
+    ? "w-full min-h-screen bg-gray-50 pt-[var(--navbar-safe-offset)]"
+    : "w-full min-h-screen bg-[var(--page-shell-background)] pt-[var(--navbar-safe-offset)]";
 
   return (
     <html lang="es">
-      <body>
+      <body className="antialiased text-[#22341c]">
         <AuthProvider>
-          {!isAdminRoute && <Navbar />}
+          {!isAdminRoute && !isAuthRoute && <Navbar />}
 
-          <main
-            className={
-              !isAdminRoute && !isLandingPage
-                ? "pt-28 md:pt-16"
-                : ""
-            }
-          >
+          <main className={mainClassName}>
             {children}
           </main>
 

@@ -546,7 +546,7 @@ export default function ZonasClient() {
   }, []);
 
     return (
-    <main className="h-[calc(100vh-64px)] bg-[#f8f6f1]">
+    <main className="h-[calc(100dvh-var(--navbar-safe-offset))] overflow-hidden">
       <div className="flex h-full min-h-0 flex-col">
         <ZonasFiltersBar
           filtros={filtros}
@@ -565,7 +565,7 @@ export default function ZonasClient() {
           }
         />
 
-        <section className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[420px_1fr]">
+        <section className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[auto_minmax(0,1fr)] overflow-hidden lg:grid-cols-[420px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
           <aside className="min-h-0 overflow-y-auto border-r border-[#ddd6c7] bg-[#fcfbf8]">
             <div className="space-y-3 p-4">
               {loading &&
@@ -623,7 +623,7 @@ export default function ZonasClient() {
             </div>
           </aside>
 
-          <div className="min-h-0">
+          <div className="min-h-[320px] min-w-0 lg:min-h-0">
             <ZonasMap
               terrenos={terrenosOrdenados}
               selectedId={selectedId}

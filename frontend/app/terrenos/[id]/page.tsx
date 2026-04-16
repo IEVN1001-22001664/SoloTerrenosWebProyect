@@ -288,12 +288,6 @@ export default async function TerrenoDetalle({
             <span className="rounded-full bg-[#22341c] px-3 py-1 text-xs font-semibold text-white">
               {text(tipoVisible)}
             </span>
-
-            {terreno.negociable === true && (
-              <span className="rounded-full bg-[#9f885c]/15 px-3 py-1 text-xs font-semibold text-[#22341c]">
-                Precio negociable
-              </span>
-            )}
           </div>
         </div>
 
@@ -429,7 +423,7 @@ export default async function TerrenoDetalle({
             <div className="overflow-hidden rounded-[1.6rem] border border-[#817d58]/12 bg-[#ece8dd]">
               <div className="h-[320px] md:h-[540px] xl:h-[680px]">
                 <TerrenoMapWrapper
-                  coordinates={terreno.poligono as LatLngTuple[]}
+                  coordinates={terreno.poligono as [number, number][]}
                 />
               </div>
             </div>

@@ -3,6 +3,10 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --page-shell-background: #f7f6f1;
+  --navbar-offset-top: 20px;
+  --navbar-height: 72px;
+  --navbar-safe-offset: calc(var(--navbar-offset-top) + var(--navbar-height));
 }
 
 @theme inline {
@@ -34,7 +38,7 @@
 }
 
 body {
-  background: var(--background);
+  background: var(--page-shell-background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
@@ -68,7 +72,6 @@ html {
   scroll-behavior: smooth;
 }
 
-
 :root {
   --admin-bg: #f1f5f9;
   --admin-surface: #ffffff;
@@ -95,4 +98,54 @@ html {
 
   --admin-danger-soft: #fff1f2;
   --admin-danger-text: #b42318;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --navbar-height: 120px;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes kenBurns {
+  from { transform: scale(1); }
+  to { transform: scale(1.1); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 1s ease-out forwards;
+}
+
+.animate-ken-burns {
+  animation: kenBurns 15s ease-out forwards;
+}
+
+/* Delays personalizados */
+.delay-1 { animation-delay: 0.2s; }
+.delay-2 { animation-delay: 0.5s; }
+.delay-3 { animation-delay: 0.8s; }
+.delay-4 { animation-delay: 1.1s; }
+
+
+@keyframes mobileScroll {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(200%);
+  }
+}
+
+.animate-mobile-scroll {
+  animation: mobileScroll 2s cubic-bezier(0.15, 0.41, 0.69, 0.94) infinite;
 }

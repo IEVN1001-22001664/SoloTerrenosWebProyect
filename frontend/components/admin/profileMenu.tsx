@@ -34,7 +34,7 @@ export default function ProfileMenu() {
         </div>
       )}
 
-      <span className="text-sm font-medium text-white">
+      <span className="text-sm font-medium text-slate-800">
         {nombreMostrar}
       </span>
     </div>

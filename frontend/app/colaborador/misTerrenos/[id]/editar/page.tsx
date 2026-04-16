@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import EditarForm from "@/components/editarTerreno/editarForm";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
 export default function EditarTerrenoPage() {
   const params = useParams();
   const id = params.id as string;
