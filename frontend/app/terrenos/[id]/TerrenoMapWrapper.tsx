@@ -3,10 +3,11 @@
 import dynamic from "next/dynamic";
 import type { LatLngTuple } from "leaflet";
 
-// Cargamos el componente del mapa de forma dinámica
 const TerrenoMap = dynamic(() => import("./TerrenoMap"), {
-  ssr: false, // DESACTIVA el renderizado en el servidor para este componente
-  loading: () => <div className="w-full h-96 bg-gray-100 animate-pulse rounded-xl" /> // Opcional: un placeholder
+  ssr: false,
+  loading: () => (
+    <div className="h-full w-full animate-pulse rounded-[1.4rem] bg-[#ece8dd]" />
+  ),
 });
 
 interface Props {
@@ -14,5 +15,9 @@ interface Props {
 }
 
 export default function TerrenoMapWrapper({ coordinates }: Props) {
-  return <TerrenoMap coordinates={coordinates} />;
+  return (
+    <div className="h-full w-full">
+      <TerrenoMap coordinates={coordinates} />
+    </div>
+  );
 }

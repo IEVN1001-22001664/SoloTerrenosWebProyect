@@ -4,6 +4,8 @@ import Link from "next/link";
 import TerrenoMapWrapper from "./TerrenoMapWrapper";
 import TerrenoContactoActions from "./terrenoContactoActions";
 import FavoriteButton from "@/components/terrenos/favoriteButton";
+import TerrenoGaleria from "./terrenoGaleria";
+import TerrenoQuickActions from "./terrenoQuickActions";
 import {
   ArrowLeft,
   MapPin,
@@ -18,10 +20,12 @@ import {
   Home,
   Map,
   CircleDollarSign,
-  MoveRight,
+  Image as ImageIcon,
+  HandCoins
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
 interface Terreno {
   id: number;
   titulo: string;
@@ -105,6 +109,17 @@ function text(value?: string, fallback = "No especificado") {
   return value && value.toString().trim() ? value : fallback;
 }
 
+function capitalizeWords(value?: string, fallback = "No especificado") {
+  const clean = value && value.toString().trim();
+  if (!clean) return fallback;
+
+  return clean
+    .toLowerCase()
+    .split(" ")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 function boolText(value?: boolean) {
   if (value === true) return "Sí";
   if (value === false) return "No";
@@ -125,6 +140,45 @@ function perimeterText(value?: number | string) {
     return `${Math.round(perimeter)} m`;
   }
   return "Por definir";
+}
+
+function MiniCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-2xl bg-[#f7f6f1] p-4">
+      <p className="text-[11px] uppercase tracking-[0.14em] text-[#817d58]">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-semibold text-[#22341c]">{value}</p>
+    </div>
+  );
+}
+
+function DataCard({
+  icon,
+  label,
+  value,
+}: {
+  icon?: React.ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-2xl bg-[#f7f6f1] p-5">
+      {icon ? (
+        <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#9f885c]/15 text-[#22341c]">
+          {icon}
+        </div>
+      ) : null}
+      <p className="text-sm text-[#817d58]">{label}</p>
+      <p className="mt-1 font-semibold text-[#22341c]">{value}</p>
+    </div>
+  );
 }
 
 export default async function TerrenoDetalle({
@@ -182,6 +236,17 @@ export default async function TerrenoDetalle({
       .filter(Boolean)
       .join(", ") || "No especificada";
 
+    const googleMapsQuery =
+    terreno.centro_lat && terreno.centro_lng
+      ? `${terreno.centro_lat},${terreno.centro_lng}`
+      : direccionCompleta !== "No especificada"
+      ? direccionCompleta
+      : ubicacionGeneral;
+
+  const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    googleMapsQuery
+  )}`;
+
   const tipoVisible =
     terreno.uso_suelo || terreno.tipo_propiedad || terreno.tipo || "Terreno";
 
@@ -196,15 +261,21 @@ export default async function TerrenoDetalle({
       : [{ id: 0, url: "/images/terreno-placeholder.jpg" }];
 
   const portada = galeria[0]?.url || "/images/terreno-placeholder.jpg";
-  const secundarias = galeria.slice(1, 5);
+  const secundarias =
+    galeria.slice(1, 5).length > 0
+      ? galeria.slice(1, 5)
+      : [1, 2, 3, 4].map((item) => ({
+          id: item,
+          url: portada,
+        }));
 
   const tieneMapa =
     Array.isArray(terreno.poligono) && terreno.poligono.length > 0;
 
   return (
     <main className="min-h-screen bg-[#f7f6f1] pb-16 pt-24">
-      <div className="mx-auto w-full max-w-[1600px] px-4 md:px-6 xl:px-8 2xl:px-10">
-        <div className="mb-6">
+      <div className="mx-auto w-full max-w-[1500px] px-4 md:px-6 xl:px-8">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <Link
             href="/terrenos"
             className="inline-flex items-center gap-2 text-sm font-medium text-[#817d58] transition hover:text-[#22341c]"
@@ -212,238 +283,160 @@ export default async function TerrenoDetalle({
             <ArrowLeft size={16} />
             Volver a terrenos
           </Link>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-[#22341c] px-3 py-1 text-xs font-semibold text-white">
+              {text(tipoVisible)}
+            </span>
+
+            {terreno.negociable === true && (
+              <span className="rounded-full bg-[#9f885c]/15 px-3 py-1 text-xs font-semibold text-[#22341c]">
+                Precio negociable
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* HERO + GALERÍA */}
-        <section className="mb-8 overflow-hidden rounded-[2.2rem] border border-[#817d58]/12 bg-white shadow-sm">
-          <div className="grid gap-0 xl:grid-cols-[minmax(0,1.08fr)_minmax(420px,0.92fr)]">
-            {/* PANEL IZQUIERDO */}
-            <div className="bg-gradient-to-br from-[#22341c] via-[#2d4424] to-[#828d4b] px-6 py-7 text-white md:px-8 xl:px-10 xl:py-9">
-              <div className="mb-4 flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-white/14 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
-                  {text(tipoVisible)}
-                </span>
+        <div className="mb-4">
+          <h1 className="max-w-5xl text-3xl font-bold leading-tight tracking-tight text-[#22341c] md:text-4xl xl:text-[2.8rem]">
+            {terreno.titulo}
+          </h1>
 
-                {terreno.negociable === true && (
-                  <span className="rounded-full bg-[#9f885c]/25 px-3 py-1 text-xs font-medium text-white">
-                    Precio negociable
-                  </span>
-                )}
-              </div>
+          <p className="mt-3 flex items-center gap-2 text-sm text-[#817d58] md:text-base">
+            <MapPin size={17} />
+            {ubicacionGeneral}
+          </p>
+        </div>
 
-              <h1 className="max-w-4xl text-3xl font-bold leading-tight tracking-tight md:text-4xl xl:text-[2.8rem]">
-                {terreno.titulo}
-              </h1>
+        {/* GALERÍA SUPERIOR */}
+       <TerrenoGaleria titulo={terreno.titulo} imagenes={galeria} />
 
-              <p className="mt-4 flex items-center gap-2 text-sm text-white/85 md:text-base">
-                <MapPin size={17} />
-                {ubicacionGeneral}
+        {/* RESUMEN IZQ + DESCRIPCIÓN DER */}
+        <section className="mb-8 grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
+          <article className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#22341c] via-[#2d4424] to-[#828d4b] p-5 text-white shadow-sm md:p-6">
+            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <span className="rounded-full bg-white/12 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-white/90 w-fit">
+                Resumen
+              </span>
+
+              <TerrenoQuickActions
+                terrenoId={terreno.id}
+                titulo={terreno.titulo}
+                ubicacion={ubicacionGeneral}
+                googleMapsUrl={googleMapsUrl}
+              />
+            </div>
+
+            <div>
+              <p className="text-3xl font-bold tracking-tight">
+                {money(terreno.precio)}
               </p>
+              <p className="mt-1 text-sm font-medium text-white/75">
+                {terreno.negociable ? "Precio negociable" : "Precio no negociable"}
+              </p>
+            </div>
 
-              <div className="mt-7 grid grid-cols-2 gap-3 xl:max-w-4xl xl:grid-cols-4">
-                <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-white/70">
-                    Precio
-                  </p>
-                  <p className="mt-1 text-sm font-semibold md:text-base">
-                    {money(terreno.precio)}
-                  </p>
-                </div>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <MiniCard label="Superficie" value={areaText(terreno.area_m2)} />
+              <MiniCard
+                label="Perímetro"
+                value={perimeterText(terreno.perimetro_m)}
+              />
+              <MiniCard
+                label="Uso de suelo"
+                value={capitalizeWords(terreno.uso_suelo)}
+              />
+              <MiniCard
+                label="Tipo"
+                value={capitalizeWords(terreno.tipo_propiedad || terreno.tipo)}
+              />
+              <MiniCard
+                label="Topografía"
+                value={capitalizeWords(terreno.topografia)}
+              />
+              <MiniCard
+                label="Forma"
+                value={capitalizeWords(terreno.forma)}
+              />
+            </div>
 
-                <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-white/70">
-                    Superficie
-                  </p>
-                  <p className="mt-1 text-sm font-semibold md:text-base">
-                    {areaText(terreno.area_m2)}
-                  </p>
-                </div>
+            <div className="mt-5 border-t border-white/12 pt-5">
+              <Suspense fallback={null}>
+                <TerrenoContactoActions terrenoId={terreno.id} />
+              </Suspense>
+            </div>
 
-                <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-white/70">
-                    Uso de suelo
-                  </p>
-                  <p className="mt-1 text-sm font-semibold md:text-base">
-                    {text(terreno.uso_suelo)}
-                  </p>
-                </div>
-
-                <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-white/70">
-                    Tipo
-                  </p>
-                  <p className="mt-1 text-sm font-semibold md:text-base">
-                    {text(terreno.tipo_propiedad || terreno.tipo)}
-                  </p>
-                </div>
+            <div className="mt-5 space-y-3 border-t border-white/12 pt-5 text-sm text-white/80">
+              <div className="flex items-start gap-3">
+                <CircleDollarSign className="mt-0.5 text-[#d9e0bf]" size={18} />
+                <p>
+                  Solicita más información sobre precio, condiciones y proceso
+                  de compra.
+                </p>
               </div>
 
-              <div className="mt-7 grid gap-4 md:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_340px]">
-                <div className="rounded-[1.75rem] border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
-                  <p className="text-xs uppercase tracking-[0.14em] text-white/65">
-                    Resumen rápido
-                  </p>
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    <div className="rounded-2xl bg-white/10 px-4 py-3">
-                      <p className="text-[11px] uppercase tracking-[0.14em] text-white/65">
-                        Perímetro
-                      </p>
-                      <p className="mt-1 text-sm font-semibold">
-                        {perimeterText(terreno.perimetro_m)}
-                      </p>
-                    </div>
+              <div className="flex items-start gap-3">
+                <BadgeCheck className="mt-0.5 text-[#d9e0bf]" size={18} />
+                <p>
+                  Revisa ubicación, superficie y situación legal antes de tomar
+                  una decisión.
+                </p>
+              </div>
+            </div>
+          </article>
 
-                    <div className="rounded-2xl bg-white/10 px-4 py-3">
-                      <p className="text-[11px] uppercase tracking-[0.14em] text-white/65">
-                        Topografía
-                      </p>
-                      <p className="mt-1 text-sm font-semibold">
-                        {text(terreno.topografia)}
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl bg-white/10 px-4 py-3">
-                      <p className="text-[11px] uppercase tracking-[0.14em] text-white/65">
-                        Forma
-                      </p>
-                      <p className="mt-1 text-sm font-semibold">
-                        {text(terreno.forma)}
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl bg-white/10 px-4 py-3">
-                      <p className="text-[11px] uppercase tracking-[0.14em] text-white/65">
-                        Negociable
-                      </p>
-                      <p className="mt-1 text-sm font-semibold">
-                        {boolText(terreno.negociable)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-[1.75rem] border border-white/10 bg-white px-5 py-5 text-[#22341c] shadow-sm">
-                  <p className="text-xs uppercase tracking-[0.14em] text-[#817d58]">
-                    Información rápida
-                  </p>
-                  <p className="mt-2 text-3xl font-bold tracking-tight">
-                    {money(terreno.precio)}
-                  </p>
-
-                  {terreno.negociable === true && (
-                    <p className="mt-2 text-sm font-medium text-[#828d4b]">
-                      El precio puede negociarse
-                    </p>
-                  )}
-
-                  <div className="mt-5 space-y-3">
-                    <FavoriteButton
-                      terrenoId={terreno.id}
-                      iconOnly={false}
-                      redirectTo={`/terrenos/${terreno.id}`}
-                      className="w-full justify-center rounded-2xl px-4 py-3"
-                      activeClassName="bg-[#9f885c]/15 text-[#22341c] border-[#9f885c]/25"
-                      inactiveClassName="bg-white text-[#22341c] border-[#817d58]/18"
-                    />
-
-                    <Suspense fallback={null}>
-                      <TerrenoContactoActions terrenoId={terreno.id} />
-                    </Suspense>
-                  </div>
-
-                  <div className="mt-5 space-y-3 border-t border-[#817d58]/12 pt-5">
-                    <div className="flex items-start gap-3">
-                      <CircleDollarSign className="mt-0.5 text-[#828d4b]" size={18} />
-                      <p className="text-sm text-[#817d58]">
-                        Solicita más información sobre precio, condiciones y proceso de compra.
-                      </p>
-                    </div>
-
-                    <div className="flex items-start gap-3">
-                      <BadgeCheck className="mt-0.5 text-[#828d4b]" size={18} />
-                      <p className="text-sm text-[#817d58]">
-                        Revisa ubicación, superficie y situación legal antes de tomar una decisión.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+          <article className="rounded-[2rem] border border-[#817d58]/15 bg-white p-6 shadow-sm md:p-7 xl:p-8">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#9f885c]/15 text-[#22341c]">
+                <FileText size={20} />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-[#22341c] md:text-2xl">
+                  Descripción del terreno
+                </h2>
+                <p className="text-sm text-[#817d58]">
+                  Información general, contexto y ventajas del predio
+                </p>
               </div>
             </div>
 
-            {/* PANEL DERECHO / GALERÍA */}
-            <div className="border-t border-[#817d58]/12 bg-[#f7f6f1] p-4 md:p-5 xl:border-l xl:border-t-0 xl:p-6">
-              <div className="grid h-full gap-4 xl:grid-cols-[minmax(0,1fr)_220px]">
-                <div className="relative overflow-hidden rounded-[1.9rem] bg-white">
-                  <img
-                    src={portada}
-                    alt={terreno.titulo}
-                    className="h-[320px] w-full object-cover md:h-[420px] xl:h-full xl:min-h-[620px]"
-                  />
-                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 xl:grid-cols-1">
-                  {(secundarias.length > 0 ? secundarias : [1, 2, 3, 4].map((item) => ({ id: item, url: portada }))).map((imagen) => (
-                    <div
-                      key={imagen.id}
-                      className="overflow-hidden rounded-[1.35rem] bg-white"
-                    >
-                      <img
-                        src={imagen.url}
-                        alt="Imagen del terreno"
-                        className="h-[110px] w-full object-cover md:h-[120px] xl:h-[145px]"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* MAPA + DESCRIPCIÓN */}
-        <div className="mb-8 grid gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
-          {tieneMapa && (
-            <section className="rounded-[2rem] border border-[#817d58]/15 bg-white p-5 shadow-sm md:p-6 xl:p-7">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#9f885c]/15 text-[#22341c]">
-                  <Map size={20} />
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-[#22341c] md:text-2xl">
-                    Ubicación del terreno
-                  </h2>
-                  <p className="text-sm text-[#817d58]">
-                    Referencia visual del polígono registrado
-                  </p>
-                </div>
-              </div>
-
-              <div className="overflow-hidden rounded-[1.5rem] border border-[#817d58]/12">
-                <div className="h-[320px] md:h-[430px] xl:h-[500px]">
-                  <TerrenoMapWrapper
-                    coordinates={terreno.poligono as LatLngTuple[]}
-                  />
-                </div>
-              </div>
-            </section>
-          )}
-
-          <section className="rounded-[2rem] border border-[#817d58]/15 bg-white p-5 shadow-sm md:p-6 xl:p-7">
-            <h2 className="text-xl font-semibold text-[#22341c] md:text-2xl">
-              Descripción del terreno
-            </h2>
-
-            <p className="mt-5 whitespace-pre-line text-sm leading-7 text-[#4f4a3d] md:text-[15px] xl:text-base">
+            <p className="whitespace-pre-line text-sm leading-8 text-[#4f4a3d] md:text-[15px] xl:text-base">
               {text(
                 terreno.descripcion,
                 "Este terreno no cuenta con una descripción detallada por el momento."
               )}
             </p>
-          </section>
-        </div>
+          </article>
+        </section>
 
-        {/* INFORMACIÓN COMPLEMENTARIA */}
+        {/* MAPA ANCHO */}
+        {tieneMapa && (
+          <section className="mb-8 rounded-[2rem] border border-[#817d58]/15 bg-white p-5 shadow-sm md:p-6 xl:p-7">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#9f885c]/15 text-[#22341c]">
+                <Map size={20} />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-[#22341c] md:text-2xl">
+                  Ubicación del terreno
+                </h2>
+                <p className="text-sm text-[#817d58]">
+                  Referencia visual del polígono registrado
+                </p>
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-[1.6rem] border border-[#817d58]/12 bg-[#ece8dd]">
+              <div className="h-[320px] md:h-[540px] xl:h-[680px]">
+                <TerrenoMapWrapper
+                  coordinates={terreno.poligono as LatLngTuple[]}
+                />
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* INFORMACIÓN INFERIOR */}
         <div className="grid gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
           <div className="space-y-8">
             <section className="rounded-[2rem] border border-[#817d58]/15 bg-white p-5 shadow-sm md:p-6 xl:p-7">
@@ -452,45 +445,29 @@ export default async function TerrenoDetalle({
               </h2>
 
               <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-2xl bg-[#f7f6f1] p-5">
-                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#9f885c]/15 text-[#22341c]">
-                    <Ruler size={18} />
-                  </div>
-                  <p className="text-sm text-[#817d58]">Superficie total</p>
-                  <p className="mt-1 font-semibold text-[#22341c]">
-                    {areaText(terreno.area_m2)}
-                  </p>
-                </div>
+                <DataCard
+                  icon={<Ruler size={18} />}
+                  label="Superficie total"
+                  value={areaText(terreno.area_m2)}
+                />
 
-                <div className="rounded-2xl bg-[#f7f6f1] p-5">
-                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#9f885c]/15 text-[#22341c]">
-                    <ScanLine size={18} />
-                  </div>
-                  <p className="text-sm text-[#817d58]">Perímetro</p>
-                  <p className="mt-1 font-semibold text-[#22341c]">
-                    {perimeterText(terreno.perimetro_m)}
-                  </p>
-                </div>
+                <DataCard
+                  icon={<ScanLine size={18} />}
+                  label="Perímetro"
+                  value={perimeterText(terreno.perimetro_m)}
+                />
 
-                <div className="rounded-2xl bg-[#f7f6f1] p-5">
-                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#9f885c]/15 text-[#22341c]">
-                    <Mountain size={18} />
-                  </div>
-                  <p className="text-sm text-[#817d58]">Topografía</p>
-                  <p className="mt-1 font-semibold text-[#22341c]">
-                    {text(terreno.topografia)}
-                  </p>
-                </div>
+                <DataCard
+                  icon={<Mountain size={18} />}
+                  label="Topografía"
+                  value={capitalizeWords(terreno.topografia)}
+                />
 
-                <div className="rounded-2xl bg-[#f7f6f1] p-5">
-                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#9f885c]/15 text-[#22341c]">
-                    <Grid3X3 size={18} />
-                  </div>
-                  <p className="text-sm text-[#817d58]">Forma</p>
-                  <p className="mt-1 font-semibold text-[#22341c]">
-                    {text(terreno.forma)}
-                  </p>
-                </div>
+                <DataCard
+                  icon={<Grid3X3 size={18} />}
+                  label="Forma"
+                  value={capitalizeWords(terreno.forma)}
+                />
               </div>
             </section>
 
@@ -500,47 +477,35 @@ export default async function TerrenoDetalle({
               </h2>
 
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl bg-[#f7f6f1] p-5">
-                  <p className="text-sm text-[#817d58]">Ubicación general</p>
-                  <p className="mt-1 font-semibold text-[#22341c]">
-                    {text(ubicacionGeneral)}
-                  </p>
-                </div>
+                <DataCard
+                  label="Ubicación general"
+                  value={text(ubicacionGeneral)}
+                />
 
-                <div className="rounded-2xl bg-[#f7f6f1] p-5">
-                  <p className="text-sm text-[#817d58]">Dirección</p>
-                  <p className="mt-1 font-semibold text-[#22341c]">
-                    {text(direccionCompleta)}
-                  </p>
-                </div>
+                <DataCard
+                  label="Dirección"
+                  value={text(direccionCompleta)}
+                />
 
-                <div className="rounded-2xl bg-[#f7f6f1] p-5">
-                  <p className="text-sm text-[#817d58]">Municipio</p>
-                  <p className="mt-1 font-semibold text-[#22341c]">
-                    {text(terreno.municipio)}
-                  </p>
-                </div>
+                <DataCard
+                  label="Municipio"
+                  value={text(terreno.municipio)}
+                />
 
-                <div className="rounded-2xl bg-[#f7f6f1] p-5">
-                  <p className="text-sm text-[#817d58]">Estado / región</p>
-                  <p className="mt-1 font-semibold text-[#22341c]">
-                    {text(terreno.estado_region)}
-                  </p>
-                </div>
+                <DataCard
+                  label="Estado / región"
+                  value={text(terreno.estado_region)}
+                />
 
-                <div className="rounded-2xl bg-[#f7f6f1] p-5">
-                  <p className="text-sm text-[#817d58]">Colonia</p>
-                  <p className="mt-1 font-semibold text-[#22341c]">
-                    {text(terreno.colonia)}
-                  </p>
-                </div>
+                <DataCard
+                  label="Colonia"
+                  value={text(terreno.colonia)}
+                />
 
-                <div className="rounded-2xl bg-[#f7f6f1] p-5">
-                  <p className="text-sm text-[#817d58]">Código postal</p>
-                  <p className="mt-1 font-semibold text-[#22341c]">
-                    {text(terreno.codigo_postal)}
-                  </p>
-                </div>
+                <DataCard
+                  label="Código postal"
+                  value={text(terreno.codigo_postal)}
+                />
               </div>
             </section>
           </div>
@@ -552,59 +517,35 @@ export default async function TerrenoDetalle({
               </h2>
 
               <div className="mt-5 grid gap-4">
-                <div className="rounded-2xl bg-[#f7f6f1] p-5">
-                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#9f885c]/15 text-[#22341c]">
-                    <Home size={18} />
-                  </div>
-                  <p className="text-sm text-[#817d58]">Tipo de propiedad</p>
-                  <p className="mt-1 font-semibold text-[#22341c]">
-                    {text(terreno.tipo_propiedad || terreno.tipo)}
-                  </p>
-                </div>
+                <DataCard
+                  icon={<Home size={18} />}
+                  label="Tipo de propiedad"
+                  value={capitalizeWords(terreno.tipo_propiedad || terreno.tipo)}
+                />
 
-                <div className="rounded-2xl bg-[#f7f6f1] p-5">
-                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#9f885c]/15 text-[#22341c]">
-                    <Landmark size={18} />
-                  </div>
-                  <p className="text-sm text-[#817d58]">Uso de suelo</p>
-                  <p className="mt-1 font-semibold text-[#22341c]">
-                    {text(terreno.uso_suelo)}
-                  </p>
-                </div>
+                <DataCard
+                  icon={<Landmark size={18} />}
+                  label="Uso de suelo"
+                  value={capitalizeWords(terreno.uso_suelo)}
+                />
 
-                <div className="rounded-2xl bg-[#f7f6f1] p-5">
-                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#9f885c]/15 text-[#22341c]">
-                    <FileText size={18} />
-                  </div>
-                  <p className="text-sm text-[#817d58]">Escritura</p>
-                  <p className="mt-1 font-semibold text-[#22341c]">
-                    {text(terreno.escritura)}
-                  </p>
-                </div>
+                <DataCard
+                  icon={<FileText size={18} />}
+                  label="Escritura"
+                  value={capitalizeWords(terreno.escritura)}
+                />
 
-                <div className="rounded-2xl bg-[#f7f6f1] p-5">
-                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#9f885c]/15 text-[#22341c]">
-                    <Scale size={18} />
-                  </div>
-                  <p className="text-sm text-[#817d58]">Estatus legal</p>
-                  <p className="mt-1 font-semibold text-[#22341c]">
-                    {text(terreno.estatus_legal)}
-                  </p>
-                </div>
+                <DataCard
+                  icon={<Scale size={18} />}
+                  label="Estatus legal"
+                  value={capitalizeWords(terreno.estatus_legal)}
+                />
 
-                <div className="rounded-2xl bg-[#f7f6f1] p-5">
-                  <p className="text-sm text-[#817d58]">Gravamen</p>
-                  <p className="mt-1 font-semibold text-[#22341c]">
-                    {text(terreno.gravamen)}
-                  </p>
-                </div>
-
-                <div className="rounded-2xl bg-[#f7f6f1] p-5">
-                  <p className="text-sm text-[#817d58]">Negociable</p>
-                  <p className="mt-1 font-semibold text-[#22341c]">
-                    {boolText(terreno.negociable)}
-                  </p>
-                </div>
+                <DataCard
+                  icon={<HandCoins size={18} />}
+                  label="Gravamen"
+                  value={capitalizeWords(terreno.gravamen)}
+                />
               </div>
             </section>
 
@@ -616,16 +557,26 @@ export default async function TerrenoDetalle({
                 Solicita más información
               </h3>
               <p className="mt-3 text-sm leading-7 text-[#e7e9dd]">
-                Ponte en contacto para conocer disponibilidad, negociación y proceso de compra.
+                Ponte en contacto para conocer disponibilidad, negociación y
+                proceso de compra.
               </p>
 
-              <button className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-[#828d4b] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#9f885c]">
-                Contactar ahora
-                <MoveRight size={16} />
-              </button>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Suspense fallback={null}>
+                  <TerrenoContactoActions terrenoId={terreno.id} />
+                </Suspense>
+              </div>
             </section>
           </div>
         </div>
+
+        {/* BLOQUE OPCIONAL DE TOTAL DE IMÁGENES */}
+        <section className="mt-8">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm text-[#817d58] shadow-sm">
+            <ImageIcon size={16} />
+            {galeria.length} imagen{galeria.length === 1 ? "" : "es"} disponibles
+          </div>
+        </section>
       </div>
     </main>
   );
