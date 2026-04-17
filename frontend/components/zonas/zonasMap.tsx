@@ -266,25 +266,54 @@ function FocusSelectedTerreno({
   useEffect(() => {
     if (!focusRequest) return;
     if (lastNonceRef.current === focusRequest.nonce) return;
+    if (!map) return;
 
     const terreno = terrenos.find((t) => t.id === focusRequest.id);
     if (!terreno) return;
 
-    const target: LatLngExpression = [
-      Number(terreno.centro_lat),
-      Number(terreno.centro_lng),
-    ];
+    const lat = Number(terreno.centro_lat);
+    const lng = Number(terreno.centro_lng);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+    const currentCenter = map.getCenter?.();
+    const currentZoom = map.getZoom?.();
+
+    if (
+      !currentCenter ||
+      !Number.isFinite(currentCenter.lat) ||
+      !Number.isFinite(currentCenter.lng) ||
+      !Number.isFinite(currentZoom)
+    ) {
+      return;
+    }
 
     const targetZoom =
       focusRequest.source === "card"
-        ? Math.max(map.getZoom(), 13)
-        : Math.max(map.getZoom(), 12);
-
-    map.flyTo(target, targetZoom, {
-      duration: 0.7,
-    });
+        ? Math.max(currentZoom, 13)
+        : Math.max(currentZoom, 12);
 
     lastNonceRef.current = focusRequest.nonce;
+
+    requestAnimationFrame(() => {
+      try {
+        map.invalidateSize();
+
+        map.setView([lat, lng], targetZoom, {
+          animate: false,
+        });
+      } catch (error) {
+        console.error("Error en flyTo, usando setView como fallback:", error);
+
+        try {
+          map.setView([lat, lng], targetZoom, {
+            animate: false,
+          });
+        } catch (fallbackError) {
+          console.error("Error en setView fallback:", fallbackError);
+        }
+      }
+    });
   }, [focusRequest, terrenos, map]);
 
   return null;
@@ -454,6 +483,10 @@ export default function ZonasMap({
         )}
 
         {terrenos.map((t) => {
+          const lat = Number(t.centro_lat);
+          const lng = Number(t.centro_lng);
+
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
           const state =
             selectedId === t.id
               ? "selected"
@@ -473,7 +506,7 @@ export default function ZonasMap({
           return (
             <Marker
               key={t.id}
-              position={[Number(t.centro_lat), Number(t.centro_lng)]}
+              position={[lat, lng]}
               icon={createPriceIcon(t.precio, state)}
               eventHandlers={{
                 click: () => {

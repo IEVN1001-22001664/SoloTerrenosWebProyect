@@ -14,6 +14,7 @@ import dynamic from "next/dynamic";
 import ZonasFiltersBar from "./zonasFiltersBar";
 import TerrenoMapCard from "./terrenoMapCard";
 import { FiltrosMapa, MapBounds, TerrenoMapa } from "./types";
+import { ChevronUp, ChevronDown, MapPin } from "lucide-react";
 
 const ZonasMap = dynamic(() => import("./zonasMap"), {
   ssr: false,
@@ -313,6 +314,7 @@ export default function ZonasClient() {
   });
 
   const [errorMapa, setErrorMapa] = useState<string | null>(null);
+  const [mobileCardsExpanded, setMobileCardsExpanded] = useState(true);
 
   const cardsRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -544,9 +546,65 @@ export default function ZonasClient() {
     currentBoundsRef.current = bounds;
     setCurrentBounds(bounds);
   }, []);
+    const renderTerrenosList = (paddingClass = "p-4") => (
+    <div className={`space-y-3 ${paddingClass}`}>
+      {loading &&
+        Array.from({ length: 6 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-32 animate-pulse rounded-2xl border border-[#e8e2d7] bg-white"
+          />
+        ))}
+
+      {errorMapa && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {errorMapa}
+        </div>
+      )}
+
+      {!loading && !errorMapa && terrenosOrdenados.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-[#d8d0bf] bg-white p-6 text-center">
+          <h3 className="text-base font-semibold text-[#22341c]">
+            No hay terrenos en esta vista
+          </h3>
+          <p className="mt-2 text-sm text-[#817d58]">
+            Mueve el mapa o ajusta los filtros. Los resultados se actualizan
+            automáticamente según la zona visible.
+          </p>
+        </div>
+      )}
+
+      {!loading &&
+        !errorMapa &&
+        terrenosOrdenados.map((terreno) => (
+          <div
+            key={terreno.id}
+            ref={(el) => {
+              cardsRefs.current[terreno.id] = el;
+            }}
+          >
+            <TerrenoMapCard
+              terreno={terreno}
+              isSelected={selectedId === terreno.id}
+              isHovered={hoveredId === terreno.id}
+              onSelect={handleCardClick}
+              onHoverChange={(hovering: boolean) => {
+                if (hovering) {
+                  setHoveredId(terreno.id);
+                } else {
+                  setHoveredId((prev) =>
+                    prev === terreno.id ? null : prev
+                  );
+                }
+              }}
+            />
+          </div>
+        ))}
+    </div>
+  );
 
     return (
-    <main className="h-[calc(100dvh-var(--navbar-safe-offset))] overflow-hidden">
+    <main className="relative z-0 -mt-8 h-[calc(100dvh-var(--navbar-safe-offset)+24px)] overflow-hidden">
       <div className="flex h-full min-h-0 flex-col">
         <ZonasFiltersBar
           filtros={filtros}
@@ -565,81 +623,101 @@ export default function ZonasClient() {
           }
         />
 
-        <section className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[auto_minmax(0,1fr)] overflow-hidden lg:grid-cols-[420px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
-          <aside className="min-h-0 overflow-y-auto border-r border-[#ddd6c7] bg-[#fcfbf8]">
-            <div className="space-y-3 p-4">
-              {loading &&
-                Array.from({ length: 6 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-32 animate-pulse rounded-2xl border border-[#e8e2d7] bg-white"
-                  />
-                ))}
+                <>
+          {/* DESKTOP */}
+          <section className="hidden min-h-0 flex-1 overflow-hidden lg:grid lg:grid-cols-[420px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
+            <aside className="min-h-0 overflow-y-auto border-r border-[#ddd6c7] bg-[#fcfbf8]">
+              {renderTerrenosList("p-4")}
+            </aside>
 
-              {errorMapa && (
-                <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                  {errorMapa}
-                </div>
-              )}
-
-              {!loading && !errorMapa && terrenosOrdenados.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-[#d8d0bf] bg-white p-6 text-center">
-                  <h3 className="text-base font-semibold text-[#22341c]">
-                    No hay terrenos en esta vista
-                  </h3>
-                  <p className="mt-2 text-sm text-[#817d58]">
-                    Mueve el mapa o ajusta los filtros. Los resultados se actualizan
-                    automáticamente según la zona visible.
-                  </p>
-                </div>
-              )}
-
-              {!loading &&
-                !errorMapa &&
-                terrenosOrdenados.map((terreno) => (
-                  <div
-                    key={terreno.id}
-                    ref={(el) => {
-                      cardsRefs.current[terreno.id] = el;
-                    }}
-                  >
-                    <TerrenoMapCard
-                      terreno={terreno}
-                      isSelected={selectedId === terreno.id}
-                      isHovered={hoveredId === terreno.id}
-                      onSelect={handleCardClick}
-                      onHoverChange={(hovering: boolean) => {
-                        if (hovering) {
-                          setHoveredId(terreno.id);
-                        } else {
-                          setHoveredId((prev) =>
-                            prev === terreno.id ? null : prev
-                          );
-                        }
-                      }}
-                    />
-                  </div>
-                ))}
+            <div className="relative z-0 min-h-0 min-w-0 [&_.leaflet-pane]:z-0 [&_.leaflet-top]:z-10 [&_.leaflet-bottom]:z-10 [&_.leaflet-control]:z-10">
+              <ZonasMap
+                terrenos={terrenosOrdenados}
+                selectedId={selectedId}
+                hoveredId={hoveredId}
+                openPopupId={openPopupId}
+                focusRequest={focusRequest}
+                onSelectTerreno={handleMarkerClick}
+                onBoundsChange={handleBoundsChange}
+                onClosePopup={() => setOpenPopupId(null)}
+                userLocation={userLocation}
+                initialCenter={activeRegion?.center ?? null}
+                initialZoom={activeRegion?.zoom ?? null}
+                initialBounds={activeRegion?.bounds ?? null}
+              />
             </div>
-          </aside>
+          </section>
 
-          <div className="min-h-[320px] min-w-0 lg:min-h-0">
-            <ZonasMap
-              terrenos={terrenosOrdenados}
-              selectedId={selectedId}
-              hoveredId={hoveredId}
-              openPopupId={openPopupId}
-              focusRequest={focusRequest}
-              onSelectTerreno={handleMarkerClick}
-              onBoundsChange={handleBoundsChange}
-              onClosePopup={() => setOpenPopupId(null)}
-              userLocation={userLocation}
-              initialCenter={activeRegion?.center ?? null}
-              initialZoom={activeRegion?.zoom ?? null}
-              initialBounds={activeRegion?.bounds ?? null}
-            />
-          </div>
-        </section>
+          {/* MOBILE */}
+          <section className="relative flex min-h-0 flex-1 overflow-hidden lg:hidden">
+            <div className="relative z-0 min-h-0 w-full flex-1 overflow-hidden [&_.leaflet-pane]:z-0 [&_.leaflet-top]:z-10 [&_.leaflet-bottom]:z-10 [&_.leaflet-control]:z-10">
+              <ZonasMap
+                terrenos={terrenosOrdenados}
+                selectedId={selectedId}
+                hoveredId={hoveredId}
+                openPopupId={openPopupId}
+                focusRequest={focusRequest}
+                onSelectTerreno={handleMarkerClick}
+                onBoundsChange={handleBoundsChange}
+                onClosePopup={() => setOpenPopupId(null)}
+                userLocation={userLocation}
+                initialCenter={activeRegion?.center ?? null}
+                initialZoom={activeRegion?.zoom ?? null}
+                initialBounds={activeRegion?.bounds ?? null}
+              />
+            </div>
+
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-3 pb-3">
+              <div className="pointer-events-auto overflow-hidden rounded-[28px] border border-[#ddd6c7] bg-white/96 shadow-[0_-10px_30px_rgba(0,0,0,0.12)] backdrop-blur">
+                <button
+                  type="button"
+                  onClick={() => setMobileCardsExpanded((prev) => !prev)}
+                  className="flex w-full items-center justify-between px-4 py-3 text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#edf1e5] text-[#22341c]">
+                      <MapPin size={16} />
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-semibold text-[#22341c]">
+                        Resultados en esta zona
+                      </p>
+                      <p className="text-xs text-[#817d58]">
+                        {loading
+                          ? "Buscando terrenos..."
+                          : `${terrenosOrdenados.length} terreno${terrenosOrdenados.length === 1 ? "" : "s"} encontrado${terrenosOrdenados.length === 1 ? "" : "s"}`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-[#817d58]">
+                      {mobileCardsExpanded ? "Ocultar" : "Ver"}
+                    </span>
+                    {mobileCardsExpanded ? (
+                      <ChevronDown size={18} className="text-[#22341c]" />
+                    ) : (
+                      <ChevronUp size={18} className="text-[#22341c]" />
+                    )}
+                  </div>
+                </button>
+
+                <div
+                  className={`transition-all duration-300 ${
+                    mobileCardsExpanded
+                      ? "max-h-[42dvh] opacity-100"
+                      : "max-h-0 opacity-0"
+                  } overflow-hidden`}
+                >
+                  <div className="max-h-[42dvh] overflow-y-auto">
+                    {renderTerrenosList("p-3")}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </>
       </div>
     </main>
   );

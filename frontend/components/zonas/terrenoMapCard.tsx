@@ -40,7 +40,7 @@ export default function TerrenoMapCard({
       }`}
     >
       <div className="flex gap-3">
-        <div className="h-24 w-28 shrink-0 overflow-hidden rounded-xl bg-[#f1eee7]">
+        <div className="h-20 w-24 shrink-0 overflow-hidden rounded-xl bg-[#f1eee7] sm:h-24 sm:w-28">
           {terreno.imagen_principal ? (
             <img
               src={terreno.imagen_principal}
