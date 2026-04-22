@@ -23,7 +23,7 @@ export default function HeroSection() {
         {/* Etiqueta Superior */}
         <div className="opacity-0 animate-fade-in-up">
           <span className="inline-block text-[#9f885c] uppercase tracking-[0.3em] md:tracking-[0.5em] text-[10px] md:text-xs font-semibold mb-6 md:mb-10">
-            BIENVENIDO A 
+            BIENVENIDO ASAEL A
           </span>
         </div>
 
