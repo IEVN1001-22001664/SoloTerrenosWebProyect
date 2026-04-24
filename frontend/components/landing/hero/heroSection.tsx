@@ -1,7 +1,11 @@
+"use client";
+
 import HeroSearchBar from "./heroSearchBar";
 import HeroStats from "./heroStats";
+import { useAuth } from "@/context/AuthContext";
 
 export default function HeroSection() {
+  const { user, loading } = useAuth();
   return (
     <section className="relative w-full h-screen flex items-center justify-center overflow-hidden bg-[#22341c]">
       
@@ -23,7 +27,13 @@ export default function HeroSection() {
         {/* Etiqueta Superior */}
         <div className="opacity-0 animate-fade-in-up">
           <span className="inline-block text-[#9f885c] uppercase tracking-[0.3em] md:tracking-[0.5em] text-[10px] md:text-xs font-semibold mb-6 md:mb-10">
-            BIENVENIDO A
+            BIENVENIDO{" "}
+            {user?.nombre && !loading && (
+              <span className="text-[#d6c29a]">
+                {user.nombre.toUpperCase()}
+              </span>
+            )}{" "}
+            A
           </span>
         </div>
 

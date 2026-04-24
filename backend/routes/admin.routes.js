@@ -71,6 +71,13 @@ router.delete(
   adminController.eliminarDefinitivamente
 );
 
+router.patch(
+  "/publicaciones/:id/destacado",
+  authMiddleware,
+  roleMiddleware("admin"),
+  adminController.actualizarDestacado
+);
+
 router.delete(
   "/publicaciones/borrados/vaciar",
   authMiddleware,

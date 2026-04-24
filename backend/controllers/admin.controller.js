@@ -188,6 +188,9 @@ exports.getPublicaciones = async (req, res) => {
         t.codigo_postal,
         t.area_m2,
         t.perimetro_m,
+        t.centro_lat,
+        t.centro_lng,
+        t.poligono,
         t.tipo,
         t.uso_suelo,
         t.topografia,
@@ -197,6 +200,11 @@ exports.getPublicaciones = async (req, res) => {
         t.escritura,
         t.estatus_legal,
         t.gravamen,
+        t.destacado,
+        t.orden_destacado,
+        t.destacado_desde,
+        t.destacado_hasta,
+        
 
         u.id AS usuario_id,
         CONCAT(COALESCE(u.nombre, ''), ' ', COALESCE(u.apellido, '')) AS usuario,
@@ -813,6 +821,51 @@ exports.getDashboardStats = async (req, res) => {
   }
 };
 
+exports.actualizarDestacado = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      destacado,
+      orden_destacado,
+      destacado_desde,
+      destacado_hasta,
+    } = req.body;
+
+    const result = await pool.query(
+      `
+      UPDATE terrenos
+      SET
+        destacado = $1,
+        orden_destacado = $2,
+        destacado_desde = $3,
+        destacado_hasta = $4,
+        actualizado_en = NOW()
+      WHERE id = $5
+        AND estado != 'eliminado'
+      RETURNING *
+      `,
+      [
+        Boolean(destacado),
+        orden_destacado || null,
+        destacado_desde || null,
+        destacado_hasta || null,
+        id,
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Publicación no encontrada" });
+    }
+
+    res.json({
+      message: "Configuración de destacado actualizada",
+      terreno: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Error actualizando destacado:", error);
+    res.status(500).json({ message: "Error actualizando destacado" });
+  }
+};
 /* ===========================
    COLABORADORES
 =========================== */

@@ -315,6 +315,7 @@ export default function ZonasClient() {
 
   const [errorMapa, setErrorMapa] = useState<string | null>(null);
   const [mobileCardsExpanded, setMobileCardsExpanded] = useState(true);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
 
   const cardsRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -323,6 +324,7 @@ export default function ZonasClient() {
   const firstLoadRef = useRef(false);
   const lastFetchKeyRef = useRef<string | null>(null);
   const currentBoundsRef = useRef<MapBounds | null>(null);
+  const suppressBoundsUntilRef = useRef(0);
 
   const normalizeFiltros = (source: FiltrosMapa): FiltrosMapa => ({
     q: source.q.trim(),
@@ -421,6 +423,21 @@ export default function ZonasClient() {
   }
 }, [activeRegion]);
 
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 1023px)");
+
+    const updateViewport = () => {
+      setIsMobileViewport(mediaQuery.matches);
+    };
+
+    updateViewport();
+    mediaQuery.addEventListener("change", updateViewport);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updateViewport);
+    };
+  }, []);
+
 
   useEffect(() => {
     mountedRef.current = true;
@@ -508,6 +525,8 @@ export default function ZonasClient() {
   };
 
   const handleCardClick = (id: number) => {
+    suppressBoundsUntilRef.current = Date.now() + 1200;
+
     setSelectedId(id);
     setOpenPopupId(null);
     setFocusRequest({
@@ -519,6 +538,8 @@ export default function ZonasClient() {
   };
 
   const handleMarkerClick = (id: number) => {
+    suppressBoundsUntilRef.current = Date.now() + 1200;
+
     setSelectedId(id);
     setOpenPopupId(id);
     setFocusRequest({
@@ -541,11 +562,14 @@ export default function ZonasClient() {
   };
 
   const handleBoundsChange = useCallback((bounds: MapBounds) => {
+    if (Date.now() < suppressBoundsUntilRef.current) return;
+
     if (areBoundsEqual(currentBoundsRef.current, bounds)) return;
 
     currentBoundsRef.current = bounds;
     setCurrentBounds(bounds);
   }, []);
+
     const renderTerrenosList = (paddingClass = "p-4") => (
     <div className={`space-y-3 ${paddingClass}`}>
       {loading &&
@@ -604,7 +628,14 @@ export default function ZonasClient() {
   );
 
     return (
-    <main className="relative z-0 -mt-8 h-[calc(100dvh-var(--navbar-safe-offset)+24px)] overflow-hidden">
+    <main className="relative z-0 -mt-2 h-[calc(100dvh-var(--navbar-safe-offset)+24px)] overflow-hidden">
+      <style jsx global>{`
+        @media (max-width: 1023px) {
+          header.fixed {
+            top: 28px !important;
+          }
+        }
+      `}</style>
       <div className="flex h-full min-h-0 flex-col">
         <ZonasFiltersBar
           filtros={filtros}
@@ -631,40 +662,44 @@ export default function ZonasClient() {
             </aside>
 
             <div className="relative z-0 min-h-0 min-w-0 [&_.leaflet-pane]:z-0 [&_.leaflet-top]:z-10 [&_.leaflet-bottom]:z-10 [&_.leaflet-control]:z-10">
-              <ZonasMap
-                terrenos={terrenosOrdenados}
-                selectedId={selectedId}
-                hoveredId={hoveredId}
-                openPopupId={openPopupId}
-                focusRequest={focusRequest}
-                onSelectTerreno={handleMarkerClick}
-                onBoundsChange={handleBoundsChange}
-                onClosePopup={() => setOpenPopupId(null)}
-                userLocation={userLocation}
-                initialCenter={activeRegion?.center ?? null}
-                initialZoom={activeRegion?.zoom ?? null}
-                initialBounds={activeRegion?.bounds ?? null}
-              />
+              {!isMobileViewport && (
+                <ZonasMap
+                  terrenos={terrenosOrdenados}
+                  selectedId={selectedId}
+                  hoveredId={hoveredId}
+                  openPopupId={openPopupId}
+                  focusRequest={focusRequest}
+                  onSelectTerreno={handleMarkerClick}
+                  onBoundsChange={handleBoundsChange}
+                  onClosePopup={() => setOpenPopupId(null)}
+                  userLocation={userLocation}
+                  initialCenter={activeRegion?.center ?? null}
+                  initialZoom={activeRegion?.zoom ?? null}
+                  initialBounds={activeRegion?.bounds ?? null}
+                />
+              )}
             </div>
           </section>
 
           {/* MOBILE */}
           <section className="relative flex min-h-0 flex-1 overflow-hidden lg:hidden">
             <div className="relative z-0 min-h-0 w-full flex-1 overflow-hidden [&_.leaflet-pane]:z-0 [&_.leaflet-top]:z-10 [&_.leaflet-bottom]:z-10 [&_.leaflet-control]:z-10">
-              <ZonasMap
-                terrenos={terrenosOrdenados}
-                selectedId={selectedId}
-                hoveredId={hoveredId}
-                openPopupId={openPopupId}
-                focusRequest={focusRequest}
-                onSelectTerreno={handleMarkerClick}
-                onBoundsChange={handleBoundsChange}
-                onClosePopup={() => setOpenPopupId(null)}
-                userLocation={userLocation}
-                initialCenter={activeRegion?.center ?? null}
-                initialZoom={activeRegion?.zoom ?? null}
-                initialBounds={activeRegion?.bounds ?? null}
-              />
+              {isMobileViewport && (
+                <ZonasMap
+                  terrenos={terrenosOrdenados}
+                  selectedId={selectedId}
+                  hoveredId={hoveredId}
+                  openPopupId={openPopupId}
+                  focusRequest={focusRequest}
+                  onSelectTerreno={handleMarkerClick}
+                  onBoundsChange={handleBoundsChange}
+                  onClosePopup={() => setOpenPopupId(null)}
+                  userLocation={userLocation}
+                  initialCenter={activeRegion?.center ?? null}
+                  initialZoom={activeRegion?.zoom ?? null}
+                  initialBounds={activeRegion?.bounds ?? null}
+                />
+              )}
             </div>
 
             <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-3 pb-3">
